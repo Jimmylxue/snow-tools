@@ -18,7 +18,19 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@/types/*":["./src/types/*"],
+      "@/utils/*":["./src/utils/*"],
+      "@/hooks/*":["./src/hooks/*"],
+      "@/stores/*":["./src/stores/*"],
+      "@/core/*":["./src/core/*"],
+      "@/components/*":["./src/components/*"],
+      "@/config/*":["./src/config/*"],
+      "@/api/*":["./src/api/*"],
+      "@/pages/*":["./src/pages/*"],
+      "@/assets/*":["./src/assets/*"],
+    }, 
   },
   "include": ["src", "electron"],
   "references": [{ "path": "./tsconfig.node.json" }]
