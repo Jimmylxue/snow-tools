@@ -1,13 +1,22 @@
 {
   "name": "snow-tool",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "husky",
+    "validate-commit-msg": "validate-commit-msg",
+    "commit": "git-cz",
+    "release": "standard-version"
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
@@ -19,6 +28,9 @@
     "react-router-dom": "^7.0.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@commitlint/cz-commitlint": "^19.5.0",
     "@types/lodash-es": "^4.17.12",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
@@ -26,12 +38,15 @@
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.20",
+    "commitizen": "^4.3.1",
     "electron": "^30.0.1",
     "electron-builder": "^24.13.3",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "husky": "^9.1.7",
     "postcss": "^8.4.49",
+    "standard-version": "^9.5.0",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
