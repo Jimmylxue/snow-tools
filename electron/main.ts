@@ -3,8 +3,8 @@ import { app, BrowserWindow, screen } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { screenEvent } from './ipc/window'
+import { registerHotKey } from './ipc/hotkey'
 
-// const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure
@@ -54,6 +54,7 @@ function createWindow() {
 			new Date().toLocaleString()
 		)
 		screenEvent(mainWindow!)
+		registerHotKey(mainWindow!)
 	})
 
 	if (VITE_DEV_SERVER_URL) {

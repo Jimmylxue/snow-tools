@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindow, screen } from "electron";
+import { ipcMain, globalShortcut, app, BrowserWindow, screen } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 function screenEvent(mainWindow2) {
@@ -7,6 +7,18 @@ function screenEvent(mainWindow2) {
       mainWindow2.setSize(600, 300);
     } else {
       mainWindow2.setSize(600, 62);
+    }
+  });
+}
+function registerHotKey(mainWindow2) {
+  const isMac = process.platform === "darwin";
+  const toggleScreen = isMac ? "Command+J" : "Ctrl+J";
+  globalShortcut.register(toggleScreen, () => {
+    if (mainWindow2.isVisible()) {
+      mainWindow2.hide();
+    } else {
+      mainWindow2.show();
+      mainWindow2.webContents.send("window-shown");
     }
   });
 }
@@ -39,6 +51,7 @@ function createWindow() {
       (/* @__PURE__ */ new Date()).toLocaleString()
     );
     screenEvent(mainWindow);
+    registerHotKey(mainWindow);
   });
   if (VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
