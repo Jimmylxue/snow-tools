@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { ipcMain } from 'electron'
 
 import { exec } from 'child_process'
 import path from 'path'
@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url'
 // 获取当前模块的目录
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-console.log('ddd')
 export function init() {
 	ipcMain.handle('get-app-icons', async () => {
 		return new Promise((resolve, reject) => {
@@ -31,35 +30,32 @@ export function init() {
 
 				apps.forEach(app => {
 					const appPath = `/Applications/${app}/Contents/Info.plist`
-					exec(
-						`defaults read "${appPath}" CFBundleIconFile`,
-						(err, iconName, iconError) => {
-							if (iconError) {
-								processedCount++
-								if (processedCount === apps.length) resolve(iconsData)
-								return
-							}
+					exec(`defaults read "${appPath}" CFBundleIconFile`, iconError => {
+						if (iconError) {
+							processedCount++
+							if (processedCount === apps.length) resolve(iconsData)
+							return
+						}
 
-							const iconPath = `/Applications/${app}/Contents/Resources/AppIcon.icns`
-							const pngPath = path.join(__dirname, `${app}.png`)
+						const iconPath = `/Applications/${app}/Contents/Resources/AppIcon.icns`
+						const pngPath = path.join(__dirname, `${app}.png`)
 
-							exec(
-								`sips -s format png "${iconPath}" --out "${pngPath}"`,
-								convertErr => {
-									if (convertErr) {
-										console.error(`转换错误: ${convertErr.message}`)
-										processedCount++
-										if (processedCount === apps.length) resolve(iconsData)
-										return
-									}
-
-									iconsData.push({ app, pngPath })
+						exec(
+							`sips -s format png "${iconPath}" --out "${pngPath}"`,
+							convertErr => {
+								if (convertErr) {
+									console.error(`转换错误: ${convertErr.message}`)
 									processedCount++
 									if (processedCount === apps.length) resolve(iconsData)
+									return
 								}
-							)
-						}
-					)
+
+								iconsData.push({ app, pngPath })
+								processedCount++
+								if (processedCount === apps.length) resolve(iconsData)
+							}
+						)
+					})
 				})
 			})
 		})

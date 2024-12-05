@@ -85,7 +85,7 @@ class RequestHttp {
 		this.service.interceptors.response.use(
 			(response: AxiosResponse) => {
 				// 请求成功时
-				const { data, config } = response // 解构
+				const { data } = response // 解构
 				if (data.code === RequestEnums.OVERDUE) {
 					// 登录信息失效，应跳转到登录页面，并清空本地的token
 					localStorage.setItem('token', '') // router.replace({ //   path: '/login' // })
@@ -117,7 +117,7 @@ class RequestHttp {
 	}
 
 	// code 是 http 请求的状态
-	handleCode(code: number, data: TResponse): void {
+	handleCode(code: number): void {
 		switch (code) {
 			case 401:
 				// message.error('登录已过期，请重新登录')
