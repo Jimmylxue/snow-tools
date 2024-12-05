@@ -1,5 +1,5 @@
-import { keyMap } from './const/map'
-import { NORMAL_COMMAND } from './const/normal'
+import { keyMap } from './command/map'
+import { NORMAL_COMMAND } from './command/normal'
 
 export function getCommandKeyAndContent(command: string) {
 	if (command.indexOf(' ') === -1) {

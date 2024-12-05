@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/command'
 import { BookType, Search, Smile } from 'lucide-react'
 import { Loading } from '@/components/common/Loading'
-import { keyMap } from '../../core/const/map'
+import { keyMap } from '../../core/command/map'
 import { inputFocus } from '@/lib/utils'
 
 export const CommandBar = observer(() => {
