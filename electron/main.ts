@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { screenEvent } from './ipc/window'
 import { registerHotKey } from './ipc/hotkey'
+import { init } from './ipc/apps'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -30,9 +31,9 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 let mainWindow: BrowserWindow | null
 
 function createWindow() {
-	const { width } = screen.getPrimaryDisplay().workAreaSize // 获取屏幕宽度
+	const { width, height } = screen.getPrimaryDisplay().workAreaSize // 获取屏幕宽度
 	const x = Math.round((width - 600) / 2) // 计算水平居中位置
-	const y = 200 // 设置垂直位置为 300px
+	const y = Math.round(height / 3) // 设置垂直位置为 300px
 
 	mainWindow = new BrowserWindow({
 		icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
@@ -55,6 +56,7 @@ function createWindow() {
 		)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
+		init()
 	})
 
 	if (VITE_DEV_SERVER_URL) {

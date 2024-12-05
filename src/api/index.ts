@@ -97,7 +97,7 @@ class RequestHttp {
 					return data
 				}
 
-				return data
+				return data.result
 			},
 			(error: AxiosError<TResponse>) => {
 				// 请求失败时

@@ -18,6 +18,8 @@ export function useCommand() {
 	const inputText = isHitCommand ? contentCommand : command
 
 	const updateInputText = (text: string) => {
+		console.log('text~', text)
+		commandStore.isEnter = false
 		if (isHitCommand) {
 			commandStore.contentCommand = text
 			commandStore.command = commandObject.key + ' ' + text
@@ -33,6 +35,14 @@ export function useCommand() {
 	const deepDel = () => {
 		commandStore.contentCommand = ''
 		commandStore.command = ''
+		commandStore.isEnter = false
+	}
+
+	/**
+	 * 按下回车键
+	 */
+	const enterCommand = () => {
+		commandStore.isEnter = true
 	}
 
 	return {
@@ -41,5 +51,6 @@ export function useCommand() {
 		inputText,
 		updateInputText,
 		deepDel,
+		enterCommand,
 	}
 }

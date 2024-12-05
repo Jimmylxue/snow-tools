@@ -1,9 +1,24 @@
-import { Card } from '@/components/ui/card'
+import { useIpc } from '@/hooks/ipc'
 import { CommandBar } from '@/pages/base/component/commandBar'
-export function Base() {
+import { observer } from 'mobx-react-lite'
+import { useEffect } from 'react'
+
+export const Base = observer(() => {
+	const ipc = useIpc()
+
+	useEffect(() => {
+		;(async () => {
+			const icons = await ipc.invoke('get-app-icons')
+
+			console.log('icons', icons)
+		})()
+	}, [])
+
 	return (
-		<Card className=" w-full">
+		<div className=" w-full h-screen">
 			<CommandBar />
-		</Card>
+			{/* <CommandBar />
+			{commandStore.command && <Content />} */}
+		</div>
 	)
-}
+})
