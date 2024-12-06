@@ -14,6 +14,7 @@ import { BookType } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { sendRouterChangeEvent, sendWindowSizeEvent } from '@/hooks/ipc/window'
 
 const placeholderText = 'Please enter the translation content'
 
@@ -58,6 +59,10 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 			debounceFn()
 		}
 	}, [commandStore.isEnter])
+
+	useEffect(() => {
+		sendWindowSizeEvent(!!translateText ? 'show' : 'close')
+	}, [translateText])
 	return (
 		<>
 			<Command
@@ -81,7 +86,17 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 			>
 				<CommandInput
 					inputId="translateInput"
-					icon={<BookType className="mr-2 shrink-0 opacity-50" />}
+					icon={
+						<BookType
+							className="mr-2 shrink-0 opacity-50"
+							onClick={() => {
+								sendRouterChangeEvent({
+									routerName: 'setting',
+									type: 'show',
+								})
+							}}
+						/>
+					}
 					style={{ height: 60 }}
 					placeholder={placeholderText}
 					value={translateText}
@@ -108,33 +123,38 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 						}
 					}}
 				/>
-				{isPending ? (
-					<div className=" w-full flex justify-center items-center">
-						<Loading />
-					</div>
-				) : (
+				{translateText && (
 					<>
-						{data?.trans_result?.length && (
-							<CommandList>
-								<CommandGroup>
-									{data?.trans_result?.map((item, index) => (
-										<CommandItem key={index}>
-											<div>
-												<div className=" hidden">{item.src}</div>
-												<div>{item.dst}</div>
-											</div>
-										</CommandItem>
-									))}
-								</CommandGroup>
-							</CommandList>
+						{isPending ? (
+							<div className=" w-full flex justify-center items-center">
+								<Loading />
+							</div>
+						) : (
+							<>
+								{data?.trans_result?.length && (
+									<CommandList>
+										<CommandGroup>
+											{data?.trans_result?.map((item, index) => (
+												<CommandItem key={index}>
+													<div>
+														<div className=" hidden">{item.src}</div>
+														<div>{item.dst}</div>
+													</div>
+												</CommandItem>
+											))}
+										</CommandGroup>
+									</CommandList>
+								)}
+								<div className=" text-sm w-full text-center justify-center fixed bottom-4">
+									Enter to copy!
+								</div>
+							</>
 						)}
 					</>
 				)}
-
-				<div className=" text-sm w-full text-center justify-center fixed bottom-4">
-					Enter to copy!
-				</div>
 			</Command>
+
+			{/* <Setting /> */}
 		</>
 	)
 })

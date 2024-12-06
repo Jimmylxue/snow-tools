@@ -15,6 +15,8 @@ import { Loading } from '@/components/common/Loading'
 import { keyMap } from '../../core/command/map'
 import { inputFocus } from '@/lib/utils'
 
+const inputId = 'baseCommandInput'
+
 export const CommandBar = observer(() => {
 	const [inputText, setInputText] = useState<string>('')
 	const [chooseCommand, setChooseCommand] = useState<string>('')
@@ -27,6 +29,13 @@ export const CommandBar = observer(() => {
 
 	useEffect(() => {
 		return listenScreen()
+	}, [])
+
+	useEffect(() => {
+		const id = setTimeout(() => {
+			inputFocus(inputId)
+		}, 50)
+		return () => clearTimeout(id)
 	}, [])
 
 	const goalCommand = keyMap[currentUseCommand]
@@ -56,7 +65,7 @@ export const CommandBar = observer(() => {
 						style={{ height: 60 }}
 						placeholder="Type a command or search..."
 						value={inputText}
-						inputId="baseCommandInput"
+						inputId={inputId}
 						onInput={e => {
 							// @ts-ignore
 							setInputText(e.target.value)
@@ -91,7 +100,7 @@ export const CommandBar = observer(() => {
 					destructCommand={() => {
 						setCurrentUseCommand('')
 						setTimeout(() => {
-							inputFocus('baseCommandInput')
+							inputFocus(inputId)
 						}, 100)
 					}}
 				/>

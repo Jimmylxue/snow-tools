@@ -1,25 +1,20 @@
-import { app, BrowserWindow, screen } from 'electron'
-// import { createRequire } from 'node:module'
+import { app, BrowserWindow } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { screenEvent } from './ipc/window'
+import {
+	createSettingWindow,
+	getOpenWindowBound,
+	screenEvent,
+} from './ipc/window'
 import { registerHotKey } from './ipc/hotkey'
 import { init } from './ipc/apps'
+import { WindowBaseConfig } from './const'
+import { routerEvent } from './ipc/router'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// The built directory structure
-//
-// ├─┬─┬ dist
-// │ │ └── index.html
-// │ │
-// │ ├─┬ dist-electron
-// │ │ ├── main.js
-// │ │ └── preload.mjs
-// │
 process.env.APP_ROOT = path.join(__dirname, '..')
 
-// 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
@@ -30,22 +25,24 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 let mainWindow: BrowserWindow | null
 
+let settingWindow: BrowserWindow
+
 function createWindow() {
-	const { width, height } = screen.getPrimaryDisplay().workAreaSize // 获取屏幕宽度
-	const x = Math.round((width - 600) / 2) // 计算水平居中位置
-	const y = Math.round(height / 3) // 设置垂直位置为 300px
+	const { x, y } = getOpenWindowBound()
 
 	mainWindow = new BrowserWindow({
-		icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+		icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
 		webPreferences: {
 			preload: path.join(__dirname, 'preload.mjs'),
 		},
 		resizable: false,
 		frame: false,
-		width: 600,
-		height: 62,
+		alwaysOnTop: true,
+		width: WindowBaseConfig.width,
+		height: WindowBaseConfig.height,
 		x,
 		y,
+		show: false,
 	})
 
 	// Test active push message to Renderer-process.
@@ -54,6 +51,9 @@ function createWindow() {
 			'main-process-message',
 			new Date().toLocaleString()
 		)
+		const { x, y } = getOpenWindowBound()
+		mainWindow!.setBounds({ x, y })
+		mainWindow!.show()
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
 		init()
@@ -85,4 +85,11 @@ app.on('activate', () => {
 	}
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+	createWindow()
+	settingWindow = createSettingWindow()
+	routerEvent({
+		base: mainWindow!,
+		setting: settingWindow,
+	})
+})

@@ -107,6 +107,7 @@ class RequestHttp {
 					return
 				}
 				if (response) {
+					// @ts-ignore
 					this.handleCode(response.status, response.data)
 				}
 				if (!window.navigator.onLine) {
