@@ -8,7 +8,7 @@ type TRouterMap = {
 
 export let currentRouter: TRouterPage = 'base'
 
-export function routerEvent(routerMap: TRouterMap) {
+export function routerEvent(routerMap: TRouterMap, app: Electron.App) {
 	ipcMain.on(
 		'window-page-event',
 		(
@@ -21,10 +21,18 @@ export function routerEvent(routerMap: TRouterMap) {
 				type: 'show' | 'hide'
 			}
 		) => {
+			const routerScreen = routerMap[routerName]
 			if (type === 'show') {
-				routerMap[routerName]?.show()
+				currentRouter = routerName
+				routerScreen.setOpacity(1)
+				routerScreen?.focus()
+				routerScreen?.show()
+				// if (currentRouter === 'setting') {
+				// 	routerScreen.webContents.send('setting-window-shown')
+				// }
 			} else {
-				routerMap[routerName]?.hide()
+				routerScreen.setOpacity(0)
+				routerScreen?.hide()
 			}
 		}
 	)

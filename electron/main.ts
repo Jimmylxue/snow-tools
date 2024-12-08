@@ -57,6 +57,16 @@ function createWindow() {
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
 		init()
+
+		mainWindow?.on('blur', () => {
+			mainWindow?.setOpacity(0)
+			mainWindow?.hide()
+		})
+
+		mainWindow?.on('focus', () => {
+			mainWindow?.setOpacity(1)
+			mainWindow?.show()
+		})
 	})
 
 	if (VITE_DEV_SERVER_URL) {
@@ -88,8 +98,11 @@ app.on('activate', () => {
 app.whenReady().then(() => {
 	createWindow()
 	settingWindow = createSettingWindow()
-	routerEvent({
-		base: mainWindow!,
-		setting: settingWindow,
-	})
+	routerEvent(
+		{
+			base: mainWindow!,
+			setting: settingWindow,
+		},
+		app
+	)
 })

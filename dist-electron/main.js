@@ -16,9 +16,13 @@ const __dirname$2 = path.dirname(fileURLToPath(import.meta.url));
 function screenEvent(mainWindow2) {
   ipcMain.on("search-input-event", (_, type) => {
     if (type === "show") {
+      mainWindow2.setResizable(true);
       mainWindow2.setSize(600, 300);
+      mainWindow2.setResizable(false);
     } else {
+      mainWindow2.setResizable(true);
       mainWindow2.setSize(600, 62);
+      mainWindow2.setResizable(false);
     }
   });
 }
@@ -73,8 +77,10 @@ function registerHotKey(mainWindow2) {
   const toggleScreen = isMac ? "Command+K" : "Ctrl+K";
   globalShortcut.register(toggleScreen, () => {
     if (mainWindow2.isVisible()) {
+      mainWindow2.setOpacity(0);
       mainWindow2.hide();
     } else {
+      mainWindow2.setOpacity(1);
       showWindow(mainWindow2);
       mainWindow2.webContents.send("window-shown");
     }
@@ -129,18 +135,21 @@ function init() {
     });
   });
 }
-function routerEvent(routerMap) {
+function routerEvent(routerMap, app2) {
   ipcMain.on(
     "window-page-event",
     (_, {
       routerName,
       type
     }) => {
-      var _a, _b;
+      const routerScreen = routerMap[routerName];
       if (type === "show") {
-        (_a = routerMap[routerName]) == null ? void 0 : _a.show();
+        routerScreen.setOpacity(1);
+        routerScreen == null ? void 0 : routerScreen.focus();
+        routerScreen == null ? void 0 : routerScreen.show();
       } else {
-        (_b = routerMap[routerName]) == null ? void 0 : _b.hide();
+        routerScreen.setOpacity(0);
+        routerScreen == null ? void 0 : routerScreen.hide();
       }
     }
   );
@@ -180,6 +189,14 @@ function createWindow() {
     screenEvent(mainWindow);
     registerHotKey(mainWindow);
     init();
+    mainWindow == null ? void 0 : mainWindow.on("blur", () => {
+      mainWindow == null ? void 0 : mainWindow.setOpacity(0);
+      mainWindow == null ? void 0 : mainWindow.hide();
+    });
+    mainWindow == null ? void 0 : mainWindow.on("focus", () => {
+      mainWindow == null ? void 0 : mainWindow.setOpacity(1);
+      mainWindow == null ? void 0 : mainWindow.show();
+    });
   });
   if (VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
@@ -201,10 +218,12 @@ app.on("activate", () => {
 app.whenReady().then(() => {
   createWindow();
   settingWindow = createSettingWindow();
-  routerEvent({
-    base: mainWindow,
-    setting: settingWindow
-  });
+  routerEvent(
+    {
+      base: mainWindow,
+      setting: settingWindow
+    }
+  );
 });
 export {
   MAIN_DIST,

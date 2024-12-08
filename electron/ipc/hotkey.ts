@@ -7,8 +7,10 @@ export function registerHotKey(mainWindow: BrowserWindow) {
 	const toggleScreen = isMac ? 'Command+K' : 'Ctrl+K'
 	globalShortcut.register(toggleScreen, () => {
 		if (mainWindow.isVisible()) {
+			mainWindow.setOpacity(0)
 			mainWindow.hide() // 隐藏窗口
 		} else {
+			mainWindow.setOpacity(1)
 			// mainWindow.show() // 显示窗口
 			showWindow(mainWindow)
 			mainWindow.webContents.send('window-shown')

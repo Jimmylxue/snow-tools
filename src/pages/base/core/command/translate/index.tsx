@@ -15,6 +15,7 @@ import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { sendRouterChangeEvent, sendWindowSizeEvent } from '@/hooks/ipc/window'
+import { Setting } from './setting'
 
 const placeholderText = 'Please enter the translation content'
 
@@ -26,6 +27,8 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 	const [translateText, setTranslateText] = useState<string>('')
 
 	const [chooseTranslate, setChooseTranslate] = useState<string>('')
+
+	const [settingShow, setSettingShow] = useState<boolean>(false)
 
 	const { mutateAsync, isPending, data } = useTranslateV2({
 		onSettled: () => {
@@ -90,10 +93,12 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 						<BookType
 							className="mr-2 shrink-0 opacity-50"
 							onClick={() => {
-								sendRouterChangeEvent({
-									routerName: 'setting',
-									type: 'show',
-								})
+								sendWindowSizeEvent('show')
+								setSettingShow(true)
+								// sendRouterChangeEvent({
+								// 	routerName: 'setting',
+								// 	type: 'show',
+								// })
 							}}
 						/>
 					}
@@ -154,7 +159,13 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 				)}
 			</Command>
 
-			{/* <Setting /> */}
+			<Setting
+				show={settingShow}
+				onClose={() => {
+					setSettingShow(false)
+					sendWindowSizeEvent('close')
+				}}
+			/>
 		</>
 	)
 })

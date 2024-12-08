@@ -9,9 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export function screenEvent(mainWindow: BrowserWindow) {
 	ipcMain.on('search-input-event', (_, type) => {
 		if (type === 'show') {
+			mainWindow.setResizable(true)
 			mainWindow.setSize(600, 300)
+			mainWindow.setResizable(false)
 		} else {
+			mainWindow.setResizable(true)
 			mainWindow.setSize(600, 62)
+			mainWindow.setResizable(false)
 		}
 	})
 }

@@ -17,7 +17,7 @@ export function sendRouterChangeEvent(params: TWindowChangeParams) {
 
 export function listenScreen() {
 	const windowShownFn = () => {
-		document.getElementById('commandBarInput')?.focus()
+		document.getElementById('baseCommandInput')?.focus()
 	}
 	ipc.on('window-shown', windowShownFn)
 	return () => {
