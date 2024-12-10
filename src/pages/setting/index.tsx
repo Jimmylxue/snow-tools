@@ -10,17 +10,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { useIpc } from '@/hooks/ipc'
 import { sendRouterChangeEvent } from '@/hooks/ipc/window'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 const ipc = useIpc()
 
 export function Setting() {
-	const [visible, setVisible] = useState<boolean>(true)
-
 	useEffect(() => {
-		const windowShownFn = () => {
-			setVisible(true)
-		}
+		const windowShownFn = () => {}
 		ipc.on('setting-window-shown', windowShownFn)
 		return () => {
 			ipc.off('setting-window-shown', windowShownFn)
@@ -44,8 +40,6 @@ export function Setting() {
 							routerName: 'base',
 							type: 'show',
 						})
-
-						setVisible(false)
 					}
 				}}
 			>

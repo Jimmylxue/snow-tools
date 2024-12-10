@@ -8,7 +8,7 @@ type TRouterMap = {
 
 export let currentRouter: TRouterPage = 'base'
 
-export function routerEvent(routerMap: TRouterMap, app: Electron.App) {
+export function routerEvent(routerMap: TRouterMap) {
 	ipcMain.on(
 		'window-page-event',
 		(

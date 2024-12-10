@@ -5,6 +5,7 @@ import {
 	createSettingWindow,
 	getOpenWindowBound,
 	screenEvent,
+	showWindow,
 } from './ipc/window'
 import { registerHotKey } from './ipc/hotkey'
 import { init } from './ipc/apps'
@@ -31,7 +32,7 @@ function createWindow() {
 	const { x, y } = getOpenWindowBound()
 
 	mainWindow = new BrowserWindow({
-		icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
+		// icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
 		webPreferences: {
 			preload: path.join(__dirname, 'preload.mjs'),
 		},
@@ -51,9 +52,7 @@ function createWindow() {
 			'main-process-message',
 			new Date().toLocaleString()
 		)
-		const { x, y } = getOpenWindowBound()
-		mainWindow!.setBounds({ x, y })
-		mainWindow!.show()
+		showWindow(mainWindow!)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
 		init()
@@ -98,11 +97,8 @@ app.on('activate', () => {
 app.whenReady().then(() => {
 	createWindow()
 	settingWindow = createSettingWindow()
-	routerEvent(
-		{
-			base: mainWindow!,
-			setting: settingWindow,
-		},
-		app
-	)
+	routerEvent({
+		base: mainWindow!,
+		setting: settingWindow,
+	})
 })

@@ -8,14 +8,13 @@ import {
 	CommandItem,
 } from '@/components/ui/command'
 import { copyToClipboard, inputFocus } from '@/lib/utils'
-import { commandStore } from '@/store/command'
-import { debounce } from 'lodash-es'
 import { BookType } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { sendRouterChangeEvent, sendWindowSizeEvent } from '@/hooks/ipc/window'
+import { sendWindowSizeEvent } from '@/hooks/ipc/window'
 import { Setting } from './setting'
+import { TranslateContextProvider, useTranslateConfig } from './context'
 
 const placeholderText = 'Please enter the translation content'
 
@@ -23,7 +22,9 @@ type TProps = {
 	destructCommand: () => void
 }
 
-export const TranslateContent = observer(({ destructCommand }: TProps) => {
+export const Child = observer(({ destructCommand }: TProps) => {
+	const { from, to } = useTranslateConfig()
+
 	const [translateText, setTranslateText] = useState<string>('')
 
 	const [chooseTranslate, setChooseTranslate] = useState<string>('')
@@ -45,23 +46,9 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 
 	const isSameRequest = data?.trans_result?.[0]?.src === translateText
 
-	const debounceFn = debounce(() => {
-		mutateAsync({
-			from: 'zh',
-			to: 'en',
-			q: commandStore.contentCommand,
-		})
-	}, 300)
-
 	useEffect(() => {
 		inputFocus('translateInput')
 	}, [])
-
-	useEffect(() => {
-		if (commandStore.isEnter) {
-			debounceFn()
-		}
-	}, [commandStore.isEnter])
 
 	useEffect(() => {
 		sendWindowSizeEvent(!!translateText ? 'show' : 'close')
@@ -95,10 +82,6 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 							onClick={() => {
 								sendWindowSizeEvent('show')
 								setSettingShow(true)
-								// sendRouterChangeEvent({
-								// 	routerName: 'setting',
-								// 	type: 'show',
-								// })
 							}}
 						/>
 					}
@@ -121,8 +104,8 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 							!isSameRequest
 						) {
 							await mutateAsync({
-								from: 'zh',
-								to: 'en',
+								from,
+								to,
 								q: translateText.trim(),
 							})
 						}
@@ -169,6 +152,14 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 		</>
 	)
 })
+
+export const TranslateContent = ({ destructCommand }: TProps) => {
+	return (
+		<TranslateContextProvider>
+			<Child destructCommand={destructCommand} />
+		</TranslateContextProvider>
+	)
+}
 
 export const TRANSLATE_COMMAND = {
 	icon: <BookType className="mr-2 shrink-0 opacity-50" />,

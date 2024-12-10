@@ -11,7 +11,7 @@ export function registerHotKey(mainWindow: BrowserWindow) {
 			mainWindow.hide() // 隐藏窗口
 		} else {
 			mainWindow.setOpacity(1)
-			// mainWindow.show() // 显示窗口
+			mainWindow.focus()
 			showWindow(mainWindow)
 			mainWindow.webContents.send('window-shown')
 		}
