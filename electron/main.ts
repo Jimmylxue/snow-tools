@@ -44,6 +44,7 @@ function createWindow() {
 		x,
 		y,
 		show: false,
+		fullscreenable: true,
 	})
 
 	// Test active push message to Renderer-process.

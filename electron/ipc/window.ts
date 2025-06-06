@@ -46,7 +46,12 @@ export function showWindow(mainWindow: BrowserWindow) {
 	const { x, y } = getOpenWindowBound()
 	// 设置窗口位置并显示
 	mainWindow.setBounds({ x, y })
+	mainWindow.setVisibleOnAllWorkspaces(true, {
+		visibleOnFullScreen: true,
+		skipTransformProcessType: false,
+	})
 	mainWindow.show()
+	mainWindow.focus()
 }
 
 export function createSettingWindow() {
