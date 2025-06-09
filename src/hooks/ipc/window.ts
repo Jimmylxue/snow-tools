@@ -1,9 +1,10 @@
+import { T_SCREEN_SIZE_TYPE } from 'electron/ipc/screen'
 import { useIpc } from '.'
 
 const ipc = useIpc()
 
-export function sendWindowSizeEvent(type: 'show' | 'close') {
-	ipc.send('search-input-event', type)
+export function sendWindowSizeEvent(type: T_SCREEN_SIZE_TYPE) {
+	ipc.send('screen_size_event', type)
 }
 
 type TWindowChangeParams = {

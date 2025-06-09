@@ -51,7 +51,7 @@ export const Child = observer(({ destructCommand }: TProps) => {
 	}, [])
 
 	useEffect(() => {
-		sendWindowSizeEvent(translateText ? 'show' : 'close')
+		sendWindowSizeEvent(translateText ? 'INPUTTING' : 'NORMAL')
 	}, [translateText])
 	return (
 		<>
@@ -107,7 +107,7 @@ export const Child = observer(({ destructCommand }: TProps) => {
 						<Settings
 							className="shrink-0 opacity-50"
 							onClick={() => {
-								sendWindowSizeEvent('show')
+								sendWindowSizeEvent('FANYI_SETTING')
 								setSettingShow(true)
 							}}
 						/>
@@ -148,7 +148,7 @@ export const Child = observer(({ destructCommand }: TProps) => {
 				show={settingShow}
 				onClose={() => {
 					setSettingShow(false)
-					sendWindowSizeEvent(translateText ? 'show' : 'close')
+					sendWindowSizeEvent(translateText ? 'INPUTTING' : 'NORMAL')
 				}}
 			/>
 		</>

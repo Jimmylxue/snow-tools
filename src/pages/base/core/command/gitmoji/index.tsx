@@ -11,7 +11,7 @@ import {
 import { copyToClipboard, inputFocus } from '@/lib/utils'
 import { Smile } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
-import { useEffect, useState } from 'react'
+import { ChangeEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { gitMojiList } from './const'
 import { catchEmojiAndCode } from './utils'
@@ -38,10 +38,11 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 			<Command
 				onKeyDown={e => {
 					if (e.key === 'Enter') {
-						console.log('chooseMoji', chooseMoji)
 						const { emoji } = catchEmojiAndCode(chooseMoji)
 						copyToClipboard(emoji)
-						toast('The copy has been copied', {})
+						toast('The copy has been copied', {
+							duration: 700,
+						})
 						setTimeout(() => {
 							inputFocus(inputId)
 						}, 100)
@@ -61,22 +62,12 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 					style={{ height: 60 }}
 					placeholder={placeholderText}
 					value={inputText}
-					onInput={e => {
-						// @ts-ignore
+					onInput={(e: ChangeEvent<HTMLInputElement>) => {
 						setInputText(e.target.value)
 					}}
-					onKeyDown={async e => {
-						// @ts-ignore
-						const newValue = e.target.value
+					onKeyDown={async (e: React.KeyboardEvent<HTMLInputElement>) => {
 						if (inputText === '' && e.key === 'Backspace') {
 							destructCommand()
-						}
-						if (
-							inputText.trim() !== ''
-							//  &&
-							// e.key === 'Enter' &&
-							// !isSameRequest
-						) {
 						}
 					}}
 				/>
@@ -98,13 +89,6 @@ export const TranslateContent = observer(({ destructCommand }: TProps) => {
 							</CommandItem>
 						))}
 					</CommandGroup>
-					{/* <CommandGroup heading="System">
-						<CommandItem>
-							<div className=" flex items-center">
-								<div>setting</div>
-							</div>
-						</CommandItem>
-					</CommandGroup> */}
 					<CommandSeparator />
 				</CommandList>
 			</Command>

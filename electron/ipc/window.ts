@@ -1,24 +1,10 @@
-import { BrowserWindow, ipcMain, screen } from 'electron'
+import { BrowserWindow, screen } from 'electron'
 import { WindowBaseConfig, WindowSettingConfig } from '../const'
 import path from 'node:path'
 import { RENDERER_DIST, VITE_DEV_SERVER_URL } from '../main'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-export function screenEvent(mainWindow: BrowserWindow) {
-	ipcMain.on('search-input-event', (_, type) => {
-		if (type === 'show') {
-			mainWindow.setResizable(true)
-			mainWindow.setSize(600, 300)
-			mainWindow.setResizable(false)
-		} else {
-			mainWindow.setResizable(true)
-			mainWindow.setSize(600, 62)
-			mainWindow.setResizable(false)
-		}
-	})
-}
 
 export function getOpenWindowBound() {
 	const currentDisplay = screen.getCursorScreenPoint()

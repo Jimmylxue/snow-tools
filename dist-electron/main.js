@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen, globalShortcut, app } from "electron";
+import { BrowserWindow, screen, globalShortcut, ipcMain, app } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { exec } from "child_process";
@@ -13,19 +13,6 @@ const WindowSettingConfig = {
   height: 400
 };
 const __dirname$2 = path.dirname(fileURLToPath(import.meta.url));
-function screenEvent(mainWindow2) {
-  ipcMain.on("search-input-event", (_, type) => {
-    if (type === "show") {
-      mainWindow2.setResizable(true);
-      mainWindow2.setSize(600, 300);
-      mainWindow2.setResizable(false);
-    } else {
-      mainWindow2.setResizable(true);
-      mainWindow2.setSize(600, 62);
-      mainWindow2.setResizable(false);
-    }
-  });
-}
 function getOpenWindowBound() {
   const currentDisplay = screen.getCursorScreenPoint();
   const displays = screen.getAllDisplays();
@@ -159,6 +146,36 @@ function routerEvent(routerMap) {
       }
     }
   );
+}
+const NORMAL_SCREEN_SIZE = {
+  width: 600,
+  height: 62
+};
+const COMMAND_INPUTTING_SCREEN_SIZE = {
+  width: 600,
+  height: 300
+};
+const FANYI_SETTING_SCREEN_SIZE = {
+  width: 600,
+  height: 300
+};
+const SYSTEM_SETTING_SCREEN_SIZE = {
+  width: 600,
+  height: 500
+};
+const SCREEN_SIZE_MAP = {
+  NORMAL: NORMAL_SCREEN_SIZE,
+  INPUTTING: COMMAND_INPUTTING_SCREEN_SIZE,
+  FANYI_SETTING: FANYI_SETTING_SCREEN_SIZE,
+  SYSTEM_SETTING: SYSTEM_SETTING_SCREEN_SIZE
+};
+function screenEvent(mainWindow2) {
+  ipcMain.on("screen_size_event", (_, type) => {
+    mainWindow2.setResizable(true);
+    const screen2 = SCREEN_SIZE_MAP[type];
+    mainWindow2.setSize(screen2.width, screen2.height);
+    mainWindow2.setResizable(false);
+  });
 }
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname, "..");

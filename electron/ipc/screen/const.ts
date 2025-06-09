@@ -1,0 +1,29 @@
+import { T_SCREEN_SIZE_TYPE, T_SCREEN_VALUE } from './type'
+
+const NORMAL_SCREEN_SIZE = {
+	width: 600,
+	height: 62,
+}
+
+const COMMAND_INPUTTING_SCREEN_SIZE = {
+	width: 600,
+	height: 300,
+}
+
+const FANYI_SETTING_SCREEN_SIZE = {
+	width: 600,
+	height: 300,
+}
+
+const SYSTEM_SETTING_SCREEN_SIZE = {
+	width: 600,
+	height: 500,
+}
+
+export const SCREEN_SIZE_MAP: { [key in T_SCREEN_SIZE_TYPE]: T_SCREEN_VALUE } =
+	{
+		NORMAL: NORMAL_SCREEN_SIZE,
+		INPUTTING: COMMAND_INPUTTING_SCREEN_SIZE,
+		FANYI_SETTING: FANYI_SETTING_SCREEN_SIZE,
+		SYSTEM_SETTING: SYSTEM_SETTING_SCREEN_SIZE,
+	}

@@ -10,10 +10,11 @@ import {
 	CommandList,
 	CommandSeparator,
 } from '@/components/ui/command'
-import { BookType, Search, Smile } from 'lucide-react'
+import { BookType, Search, Settings, Smile } from 'lucide-react'
 import { Loading } from '@/components/common/Loading'
 import { keyMap } from '../../core/command/map'
 import { inputFocus } from '@/lib/utils'
+import { SystemSetting } from '@/pages/setting'
 
 const inputId = 'baseCommandInput'
 
@@ -21,10 +22,12 @@ export const CommandBar = observer(() => {
 	const [inputText, setInputText] = useState<string>('')
 	const [chooseCommand, setChooseCommand] = useState<string>('')
 
+	const [systemSettingShow, setSystemSettingShow] = useState<boolean>(false)
+
 	const [currentUseCommand, setCurrentUseCommand] = useState<string>('')
 
 	useEffect(() => {
-		sendWindowSizeEvent(inputText ? 'show' : 'close')
+		sendWindowSizeEvent(inputText ? 'INPUTTING' : 'NORMAL')
 	}, [inputText])
 
 	useEffect(() => {
@@ -69,6 +72,15 @@ export const CommandBar = observer(() => {
 						onInput={(e: ChangeEvent<HTMLInputElement>) => {
 							setInputText(e.target.value)
 						}}
+						rightIcon={
+							<Settings
+								className="shrink-0 opacity-50"
+								onClick={() => {
+									setSystemSettingShow(true)
+									sendWindowSizeEvent('SYSTEM_SETTING')
+								}}
+							/>
+						}
 					/>
 					{inputText && (
 						<CommandList>
@@ -104,6 +116,13 @@ export const CommandBar = observer(() => {
 					}}
 				/>
 			)}
+			<SystemSetting
+				show={systemSettingShow}
+				onClose={() => {
+					setSystemSettingShow(false)
+					sendWindowSizeEvent(inputText ? 'INPUTTING' : 'NORMAL')
+				}}
+			/>
 		</>
 	)
 })

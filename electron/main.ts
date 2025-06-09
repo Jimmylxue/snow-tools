@@ -4,13 +4,13 @@ import path from 'node:path'
 import {
 	createSettingWindow,
 	getOpenWindowBound,
-	screenEvent,
 	showWindow,
 } from './ipc/window'
 import { registerHotKey } from './ipc/hotkey'
 import { init } from './ipc/apps'
 import { WindowBaseConfig } from './const'
 import { routerEvent } from './ipc/router'
+import { screenEvent } from './ipc/screen'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -54,7 +54,7 @@ function createWindow() {
 			new Date().toLocaleString()
 		)
 		// mainWindow?.webContents.openDevTools() 开启F12
-		// mainWindow?.webContents.openDevTools()
+		mainWindow?.webContents.openDevTools()
 		showWindow(mainWindow!)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
