@@ -1,4 +1,4 @@
-import { languageMap } from '@/api/translate/type'
+import { languageMap, TShortEn } from '@/api/translate/type'
 import {
 	Dialog,
 	DialogContent,
@@ -44,7 +44,7 @@ export function Setting({ show, onClose }: TProps) {
 						<Select
 							value={from}
 							onValueChange={val => {
-								updateFrom?.(val as any)
+								updateFrom?.(val as unknown as TShortEn)
 							}}
 						>
 							<SelectTrigger className="w-[180px]">
@@ -66,7 +66,7 @@ export function Setting({ show, onClose }: TProps) {
 						<Select
 							value={to}
 							onValueChange={val => {
-								updateTo?.(val as any)
+								updateTo?.(val as unknown as TShortEn)
 							}}
 						>
 							<SelectTrigger className="w-[180px]">

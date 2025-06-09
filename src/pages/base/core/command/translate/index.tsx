@@ -8,9 +8,9 @@ import {
 	CommandItem,
 } from '@/components/ui/command'
 import { copyToClipboard, inputFocus } from '@/lib/utils'
-import { BookType } from 'lucide-react'
+import { BookType, Settings } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import { sendWindowSizeEvent } from '@/hooks/ipc/window'
 import { Setting } from './setting'
@@ -51,15 +51,19 @@ export const Child = observer(({ destructCommand }: TProps) => {
 	}, [])
 
 	useEffect(() => {
-		sendWindowSizeEvent(!!translateText ? 'show' : 'close')
+		sendWindowSizeEvent(translateText ? 'show' : 'close')
 	}, [translateText])
 	return (
 		<>
 			<Command
 				key={JSON.stringify(data)}
 				onKeyDown={e => {
-					if (e.key === 'Enter' && hasTranslateResult) {
-						copyToClipboard(data?.trans_result?.[0]?.dst!)
+					if (
+						e.key === 'Enter' &&
+						hasTranslateResult &&
+						data?.trans_result?.[0]?.dst
+					) {
+						copyToClipboard(data.trans_result[0].dst)
 						toast('The copy has been copied', {})
 						setTimeout(() => {
 							inputFocus('translateInput')
@@ -76,25 +80,14 @@ export const Child = observer(({ destructCommand }: TProps) => {
 			>
 				<CommandInput
 					inputId="translateInput"
-					icon={
-						<BookType
-							className="mr-2 shrink-0 opacity-50"
-							onClick={() => {
-								sendWindowSizeEvent('show')
-								setSettingShow(true)
-							}}
-						/>
-					}
+					icon={<BookType className="mr-2 shrink-0 opacity-50" />}
 					style={{ height: 60 }}
 					placeholder={placeholderText}
 					value={translateText}
-					onInput={e => {
-						// @ts-ignore
+					onInput={(e: ChangeEvent<HTMLInputElement>) => {
 						setTranslateText(e.target.value)
 					}}
-					onKeyDown={async e => {
-						// @ts-ignore
-						const newValue = e.target.value
+					onKeyDown={async (e: React.KeyboardEvent<HTMLInputElement>) => {
 						if (translateText === '' && e.key === 'Backspace') {
 							destructCommand()
 						}
@@ -110,6 +103,15 @@ export const Child = observer(({ destructCommand }: TProps) => {
 							})
 						}
 					}}
+					rightIcon={
+						<Settings
+							className="shrink-0 opacity-50"
+							onClick={() => {
+								sendWindowSizeEvent('show')
+								setSettingShow(true)
+							}}
+						/>
+					}
 				/>
 				{translateText && (
 					<>
@@ -146,7 +148,7 @@ export const Child = observer(({ destructCommand }: TProps) => {
 				show={settingShow}
 				onClose={() => {
 					setSettingShow(false)
-					sendWindowSizeEvent('close')
+					sendWindowSizeEvent(translateText ? 'show' : 'close')
 				}}
 			/>
 		</>

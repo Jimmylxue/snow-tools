@@ -12,9 +12,8 @@ import { useIpc } from '@/hooks/ipc'
 import { sendRouterChangeEvent } from '@/hooks/ipc/window'
 import { useEffect } from 'react'
 
-const ipc = useIpc()
-
 export function Setting() {
+	const ipc = useIpc()
 	useEffect(() => {
 		const windowShownFn = () => {}
 		ipc.on('setting-window-shown', windowShownFn)

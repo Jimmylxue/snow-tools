@@ -1,5 +1,5 @@
 import { listenScreen, sendWindowSizeEvent } from '@/hooks/ipc/window'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ChangeEvent } from 'react'
 import { observer } from 'mobx-react-lite'
 import {
 	Command,
@@ -24,7 +24,7 @@ export const CommandBar = observer(() => {
 	const [currentUseCommand, setCurrentUseCommand] = useState<string>('')
 
 	useEffect(() => {
-		sendWindowSizeEvent(!!inputText ? 'show' : 'close')
+		sendWindowSizeEvent(inputText ? 'show' : 'close')
 	}, [inputText])
 
 	useEffect(() => {
@@ -66,8 +66,7 @@ export const CommandBar = observer(() => {
 						placeholder="Type a command or search..."
 						value={inputText}
 						inputId={inputId}
-						onInput={e => {
-							// @ts-ignore
+						onInput={(e: ChangeEvent<HTMLInputElement>) => {
 							setInputText(e.target.value)
 						}}
 					/>

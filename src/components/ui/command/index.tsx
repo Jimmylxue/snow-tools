@@ -39,6 +39,7 @@ const CommandInput = React.forwardRef<
 	React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & {
 		icon?: React.ReactNode
 		inputId?: string
+		rightIcon?: React.ReactNode
 	}
 >(({ className, ...props }, ref) => (
 	<div className="flex items-center border-b px-3" cmdk-input-wrapper="">
@@ -53,6 +54,7 @@ const CommandInput = React.forwardRef<
 			)}
 			{...props}
 		/>
+		{props.rightIcon}
 	</div>
 ))
 

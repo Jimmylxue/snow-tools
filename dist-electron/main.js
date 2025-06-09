@@ -190,6 +190,7 @@ function createWindow() {
       "main-process-message",
       (/* @__PURE__ */ new Date()).toLocaleString()
     );
+    mainWindow == null ? void 0 : mainWindow.webContents.openDevTools();
     showWindow(mainWindow);
     screenEvent(mainWindow);
     registerHotKey(mainWindow);

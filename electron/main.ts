@@ -53,6 +53,8 @@ function createWindow() {
 			'main-process-message',
 			new Date().toLocaleString()
 		)
+		// mainWindow?.webContents.openDevTools() 开启F12
+		// mainWindow?.webContents.openDevTools()
 		showWindow(mainWindow!)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
