@@ -6,11 +6,11 @@ import {
 	getOpenWindowBound,
 	showWindow,
 } from './ipc/window'
-import { registerHotKey } from './ipc/hotkey'
 import { init } from './ipc/apps'
 import { WindowBaseConfig } from './const'
 import { routerEvent } from './ipc/router'
 import { screenEvent } from './ipc/screen'
+import { registerHotKey } from './ipc/hotkey'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

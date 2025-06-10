@@ -7,7 +7,8 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { useState, useEffect, useRef } from 'react'
+import { sendHotKeyEvent } from '@/hooks/ipc/hotkey'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 // 自定义Label组件
 const Label = ({
@@ -36,8 +37,9 @@ const Separator = ({ className = '' }: { className?: string }) => {
 	)
 }
 
-// 将键码转换为可读的键名
+// 将键码转换为可读的键名（兼容Mac和Windows）
 const getKeyName = (keyCode: number): string => {
+	const isMac = navigator.platform.includes('Mac')
 	const keyMap: Record<number, string> = {
 		8: 'Backspace',
 		9: 'Tab',
@@ -59,8 +61,8 @@ const getKeyName = (keyCode: number): string => {
 		40: 'Down',
 		45: 'Insert',
 		46: 'Delete',
-		91: 'Win',
-		93: 'Menu',
+		91: isMac ? 'Command' : 'Win',
+		93: isMac ? 'Command' : 'Menu',
 		112: 'F1',
 		113: 'F2',
 		114: 'F3',
@@ -98,15 +100,25 @@ type TProps = {
 
 export function SystemSetting({ show, onClose }: TProps) {
 	const [isListening, setIsListening] = useState(false)
-	const [shortcut, setShortcut] = useState('Ctrl+K')
+	const [shortcut, setShortcut] = useState('')
 	const [tempShortcut, setTempShortcut] = useState('')
 	const listeningRef = useRef(false)
+
+	// 初始化快捷键设置
+	useEffect(() => {
+		const isMac = navigator.platform.includes('Mac')
+		const defaultHotkey = isMac ? 'Command+K' : 'Ctrl+K'
+		const savedHotkey =
+			localStorage.getItem('snow-tools-hotkey') || defaultHotkey
+		setShortcut(savedHotkey)
+	}, [])
 
 	// 开始监听快捷键
 	const startListening = () => {
 		setIsListening(true)
 		setTempShortcut('')
 		listeningRef.current = true
+		sendHotKeyEvent('EDITING_OPEN_HOT_KEY')
 	}
 
 	// 停止监听快捷键
@@ -116,12 +128,14 @@ export function SystemSetting({ show, onClose }: TProps) {
 	}
 
 	// 保存快捷键
-	const saveShortcut = () => {
+	const saveShortcut = useCallback(() => {
 		if (tempShortcut) {
+			localStorage.setItem('snow-tools-hotkey', tempShortcut)
 			setShortcut(tempShortcut)
 		}
 		stopListening()
-	}
+		sendHotKeyEvent('EDITING_OPEN_HOT_KEY_COMPLETE')
+	}, [tempShortcut])
 
 	// 取消修改
 	const cancelEditing = () => {
@@ -136,23 +150,38 @@ export function SystemSetting({ show, onClose }: TProps) {
 			e.preventDefault()
 			e.stopPropagation()
 
+			const isMac = navigator.platform.includes('Mac')
 			const keys = []
-			if (e.ctrlKey) keys.push('Ctrl')
+
+			// 处理修饰键
+			if (e.ctrlKey && !isMac) keys.push('Ctrl') // Windows/Linux 的 Ctrl
 			if (e.shiftKey) keys.push('Shift')
 			if (e.altKey) keys.push('Alt')
-			if (e.metaKey) keys.push('Win')
+			if (e.metaKey) keys.push(isMac ? 'Command' : 'Win') // 根据平台显示正确名称
 
-			// 不添加重复的键
-			if (!keys.includes(getKeyName(e.keyCode))) {
-				keys.push(getKeyName(e.keyCode))
+			// 添加主键（避免重复）
+			const keyName = getKeyName(e.keyCode)
+			if (!keys.includes(keyName)) {
+				keys.push(keyName)
 			}
 
 			setTempShortcut(keys.join('+'))
 		}
 
-		const handleKeyUp = () => {
+		const handleKeyUp = (e: KeyboardEvent) => {
 			if (listeningRef.current && tempShortcut) {
-				saveShortcut()
+				// 确保不是只按了修饰键
+				const isModifierOnly = [
+					'Control',
+					'Shift',
+					'Alt',
+					'Meta',
+					'Command',
+					'Win',
+				].includes(e.key)
+				if (!isModifierOnly) {
+					saveShortcut()
+				}
 			}
 		}
 
@@ -165,7 +194,7 @@ export function SystemSetting({ show, onClose }: TProps) {
 			window.removeEventListener('keydown', handleKeyDown)
 			window.removeEventListener('keyup', handleKeyUp)
 		}
-	}, [isListening, tempShortcut])
+	}, [isListening, tempShortcut, saveShortcut])
 
 	return (
 		<div>
@@ -225,7 +254,7 @@ export function SystemSetting({ show, onClose }: TProps) {
 								<div className="text-sm text-muted-foreground pl-[calc(25%+1rem)]">
 									{isListening
 										? '请按下您想要的快捷键组合'
-										: '当前快捷键: ' + shortcut}
+										: `当前快捷键: ${shortcut}`}
 								</div>
 							</div>
 						</div>

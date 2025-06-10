@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { sendWindowSizeEvent } from '@/hooks/ipc/window'
 import { Setting } from './setting'
 import { TranslateContextProvider, useTranslateConfig } from './context'
+import SimlePng from '@/assets/img/smile.png'
 
 const placeholderText = 'Please enter the translation content'
 
@@ -121,7 +122,7 @@ export const Child = observer(({ destructCommand }: TProps) => {
 							</div>
 						) : (
 							<>
-								{data?.trans_result?.length && (
+								{data?.trans_result?.length ? (
 									<CommandList>
 										<CommandGroup>
 											{data?.trans_result?.map((item, index) => (
@@ -134,6 +135,12 @@ export const Child = observer(({ destructCommand }: TProps) => {
 											))}
 										</CommandGroup>
 									</CommandList>
+								) : (
+									<img
+										className=" w-[130px] mx-auto mt-4"
+										src={SimlePng}
+										alt={'smilePng'}
+									/>
 								)}
 								<div className=" text-sm w-full text-center justify-center fixed bottom-4">
 									Enter to copy!

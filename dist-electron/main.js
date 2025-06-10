@@ -1,4 +1,4 @@
-import { BrowserWindow, screen, globalShortcut, ipcMain, app } from "electron";
+import { BrowserWindow, screen, ipcMain, globalShortcut, app } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { exec } from "child_process";
@@ -63,21 +63,6 @@ function createSettingWindow() {
     settingWindow2.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
   return settingWindow2;
-}
-function registerHotKey(mainWindow2) {
-  const isMac = process.platform === "darwin";
-  const toggleScreen = isMac ? "Command+K" : "Ctrl+K";
-  globalShortcut.register(toggleScreen, () => {
-    if (mainWindow2.isVisible()) {
-      mainWindow2.setOpacity(0);
-      mainWindow2.hide();
-    } else {
-      mainWindow2.setOpacity(1);
-      mainWindow2.focus();
-      showWindow(mainWindow2);
-      mainWindow2.webContents.send("window-shown");
-    }
-  });
 }
 const __filename = fileURLToPath$1(import.meta.url);
 const __dirname$1 = path$1.dirname(__filename);
@@ -176,6 +161,54 @@ function screenEvent(mainWindow2) {
     mainWindow2.setSize(screen2.width, screen2.height);
     mainWindow2.setResizable(false);
   });
+}
+const HOT_KEY_EVENT_NAME = "HOT_KEY_EVENT";
+let currentHotkey = "";
+let isEditHotKey = false;
+function registerHotKey(mainWindow2) {
+  updateHotkeyFromStorage(mainWindow2);
+  ipcMain.on(HOT_KEY_EVENT_NAME, (_, type) => {
+    if (type === "EDITING_OPEN_HOT_KEY") {
+      isEditHotKey = true;
+      currentHotkey = "";
+      unregisterAllHotkeys();
+    } else {
+      isEditHotKey = false;
+      updateHotkeyFromStorage(mainWindow2);
+    }
+  });
+}
+function updateHotkeyFromStorage(mainWindow2) {
+  mainWindow2.webContents.executeJavaScript(
+    `localStorage.getItem('snow-tools-hotkey') || (navigator.platform.includes('Mac') ? 'Command+K' : 'Ctrl+K')`
+  ).then((hotkey) => {
+    if (hotkey === currentHotkey) return;
+    if (currentHotkey) {
+      globalShortcut.unregister(currentHotkey);
+    }
+    try {
+      globalShortcut.register(hotkey, () => {
+        if (mainWindow2.isVisible()) {
+          if (isEditHotKey) return;
+          mainWindow2.setOpacity(0);
+          mainWindow2.hide();
+        } else {
+          mainWindow2.setOpacity(1);
+          mainWindow2.focus();
+          showWindow(mainWindow2);
+          mainWindow2.webContents.send("window-shown");
+        }
+      });
+      currentHotkey = hotkey;
+      console.log(`Hotkey updated to: ${hotkey}`);
+    } catch (error) {
+      console.error("Failed to register hotkey:", error);
+      mainWindow2.webContents.send("hotkey-register-failed", hotkey);
+    }
+  });
+}
+function unregisterAllHotkeys() {
+  globalShortcut.unregisterAll();
 }
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname, "..");
