@@ -260,7 +260,7 @@ export function SystemSetting({ show, onClose }: TProps) {
 						</div>
 
 						{/* 其他设置部分 */}
-						<div className="space-y-4">
+						{/* <div className="space-y-4">
 							<h3 className="text-lg font-medium">通用设置</h3>
 							<Separator />
 
@@ -285,12 +285,12 @@ export function SystemSetting({ show, onClose }: TProps) {
 									className="col-span-3"
 								/>
 							</div>
-						</div>
+						</div> */}
 					</div>
 
-					<div className="mt-6 flex justify-end">
+					{/* <div className="mt-6 flex justify-end">
 						<Button type="submit">保存设置</Button>
-					</div>
+					</div> */}
 				</DialogContent>
 			</Dialog>
 		</div>
