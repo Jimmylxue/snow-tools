@@ -4,14 +4,12 @@ import { T_HOT_KEY_TYPE } from './type'
 import { HOT_KEY_EVENT_NAME } from './const'
 
 let currentHotkey = ''
-let mainWindowRef: BrowserWindow | null = null
 /**
  * 是否正在修改热键 如果在修改的状态下 按了快捷键是不会
  */
 let isEditHotKey: boolean = false
 
 export function registerHotKey(mainWindow: BrowserWindow) {
-	mainWindowRef = mainWindow
 	updateHotkeyFromStorage(mainWindow)
 
 	ipcMain.on(HOT_KEY_EVENT_NAME, (_, type: T_HOT_KEY_TYPE) => {

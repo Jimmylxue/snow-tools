@@ -36,8 +36,11 @@ export function showWindow(mainWindow: BrowserWindow) {
 		visibleOnFullScreen: true,
 		skipTransformProcessType: false,
 	})
-	mainWindow.show()
-	mainWindow.focus()
+	// 确保窗口显示和焦点设置之间有足够的延迟
+	setTimeout(() => {
+		mainWindow.show()
+		mainWindow.focus()
+	}, 100)
 }
 
 export function createSettingWindow() {

@@ -1,286 +1,207 @@
-import { BrowserWindow, screen, ipcMain, globalShortcut, app } from "electron";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-import { exec } from "child_process";
-import path$1 from "path";
-import { fileURLToPath as fileURLToPath$1 } from "url";
-const WindowBaseConfig = {
+import { BrowserWindow as w, screen as y, ipcMain as d, globalShortcut as _, app as p } from "electron";
+import { fileURLToPath as C } from "node:url";
+import r from "node:path";
+import { exec as g } from "child_process";
+import A from "path";
+import { fileURLToPath as j } from "url";
+const E = {
   width: 600,
   height: 62
-};
-const WindowSettingConfig = {
+}, O = {
   width: 600,
   height: 400
-};
-const __dirname$2 = path.dirname(fileURLToPath(import.meta.url));
-function getOpenWindowBound() {
-  const currentDisplay = screen.getCursorScreenPoint();
-  const displays = screen.getAllDisplays();
-  const display = displays.find((display2) => {
-    return currentDisplay.x >= display2.bounds.x && currentDisplay.x <= display2.bounds.x + display2.bounds.width && currentDisplay.y >= display2.bounds.y && currentDisplay.y <= display2.bounds.y + display2.bounds.height;
-  });
+}, D = r.dirname(C(import.meta.url));
+function b() {
+  const e = y.getCursorScreenPoint(), s = y.getAllDisplays().find((i) => e.x >= i.bounds.x && e.x <= i.bounds.x + i.bounds.width && e.y >= i.bounds.y && e.y <= i.bounds.y + i.bounds.height);
   return {
-    x: display.bounds.x + display.bounds.width / 2 - WindowBaseConfig.width / 2,
+    x: s.bounds.x + s.bounds.width / 2 - E.width / 2,
     // 窗口居中
-    y: display.bounds.y + display.bounds.height / 3
+    y: s.bounds.y + s.bounds.height / 3
   };
 }
-function showWindow(mainWindow2) {
-  const { x, y } = getOpenWindowBound();
-  mainWindow2.setBounds({ x, y });
-  mainWindow2.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-    skipTransformProcessType: false
-  });
-  mainWindow2.show();
-  mainWindow2.focus();
+function m(e) {
+  const { x: o, y: s } = b();
+  e.setBounds({ x: o, y: s }), e.setVisibleOnAllWorkspaces(!0, {
+    visibleOnFullScreen: !0,
+    skipTransformProcessType: !1
+  }), setTimeout(() => {
+    e.show(), e.focus();
+  }, 100);
 }
-function createSettingWindow() {
-  const settingWindow2 = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, "logo.png"),
+function M() {
+  const e = new w({
+    icon: r.join(process.env.VITE_PUBLIC, "logo.png"),
     webPreferences: {
-      preload: path.join(__dirname$2, "preload.mjs")
+      preload: r.join(D, "preload.mjs")
     },
-    resizable: false,
-    frame: false,
-    alwaysOnTop: true,
+    resizable: !1,
+    frame: !1,
+    alwaysOnTop: !0,
     // width: WindowBaseConfig.width,
     // height: WindowBaseConfig.height,
-    width: WindowSettingConfig.width,
-    height: WindowSettingConfig.height,
-    show: false
+    width: O.width,
+    height: O.height,
+    show: !1
   });
-  settingWindow2.webContents.on("did-finish-load", () => {
-    settingWindow2.webContents.executeJavaScript(
-      `window.location.hash = '#/setting';`
+  return e.webContents.on("did-finish-load", () => {
+    e.webContents.executeJavaScript(
+      "window.location.hash = '#/setting';"
     );
-    const { x, y } = getOpenWindowBound();
-    settingWindow2.setBounds({ x, y });
-  });
-  if (VITE_DEV_SERVER_URL) {
-    settingWindow2.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    settingWindow2.loadFile(path.join(RENDERER_DIST, "index.html"));
-  }
-  return settingWindow2;
+    const { x: o, y: s } = b();
+    e.setBounds({ x: o, y: s });
+  }), h ? e.loadURL(h) : e.loadFile(r.join(I, "index.html")), e;
 }
-const __filename = fileURLToPath$1(import.meta.url);
-const __dirname$1 = path$1.dirname(__filename);
-function init() {
-  ipcMain.handle("get-app-icons", async () => {
-    return new Promise((resolve, reject) => {
-      exec("ls /Applications", (error, stdout, stderr) => {
-        if (error) {
-          console.error(`执行错误: ${error.message}`);
-          reject(error.message);
-          return;
-        }
-        if (stderr) {
-          console.error(`错误: ${stderr}`);
-          reject(stderr);
-          return;
-        }
-        const apps = stdout.split("\n").filter((app2) => app2.endsWith(".app"));
-        const iconsData = [];
-        let processedCount = 0;
-        apps.forEach((app2) => {
-          const appPath = `/Applications/${app2}/Contents/Info.plist`;
-          exec(`defaults read "${appPath}" CFBundleIconFile`, (iconError) => {
-            if (iconError) {
-              processedCount++;
-              if (processedCount === apps.length) resolve(iconsData);
-              return;
-            }
-            const iconPath = `/Applications/${app2}/Contents/Resources/AppIcon.icns`;
-            const pngPath = path$1.join(__dirname$1, `${app2}.png`);
-            exec(
-              `sips -s format png "${iconPath}" --out "${pngPath}"`,
-              (convertErr) => {
-                if (convertErr) {
-                  console.error(`转换错误: ${convertErr.message}`);
-                  processedCount++;
-                  if (processedCount === apps.length) resolve(iconsData);
-                  return;
-                }
-                iconsData.push({ app: app2, pngPath });
-                processedCount++;
-                if (processedCount === apps.length) resolve(iconsData);
+const U = j(import.meta.url), F = A.dirname(U);
+function H() {
+  d.handle("get-app-icons", async () => new Promise((e, o) => {
+    g("ls /Applications", (s, i, n) => {
+      if (s) {
+        console.error(`执行错误: ${s.message}`), o(s.message);
+        return;
+      }
+      if (n) {
+        console.error(`错误: ${n}`), o(n);
+        return;
+      }
+      const f = i.split(`
+`).filter((c) => c.endsWith(".app")), u = [];
+      let l = 0;
+      f.forEach((c) => {
+        const v = `/Applications/${c}/Contents/Info.plist`;
+        g(`defaults read "${v}" CFBundleIconFile`, (L) => {
+          if (L) {
+            l++, l === f.length && e(u);
+            return;
+          }
+          const V = `/Applications/${c}/Contents/Resources/AppIcon.icns`, R = A.join(F, `${c}.png`);
+          g(
+            `sips -s format png "${V}" --out "${R}"`,
+            (S) => {
+              if (S) {
+                console.error(`转换错误: ${S.message}`), l++, l === f.length && e(u);
+                return;
               }
-            );
-          });
+              u.push({ app: c, pngPath: R }), l++, l === f.length && e(u);
+            }
+          );
         });
       });
     });
-  });
+  }));
 }
-function routerEvent(routerMap) {
-  ipcMain.on(
+function B(e) {
+  d.on(
     "window-page-event",
-    (_, {
-      routerName,
-      type
+    (o, {
+      routerName: s,
+      type: i
     }) => {
-      const routerScreen = routerMap[routerName];
-      if (type === "show") {
-        routerScreen.setOpacity(1);
-        routerScreen == null ? void 0 : routerScreen.focus();
-        routerScreen == null ? void 0 : routerScreen.show();
-      } else {
-        routerScreen.setOpacity(0);
-        routerScreen == null ? void 0 : routerScreen.hide();
-      }
+      const n = e[s];
+      i === "show" ? (n.setOpacity(1), n == null || n.focus(), n == null || n.show()) : (n.setOpacity(0), n == null || n.hide());
     }
   );
 }
-const NORMAL_SCREEN_SIZE = {
+const G = {
   width: 600,
   height: 62
-};
-const COMMAND_INPUTTING_SCREEN_SIZE = {
+}, K = {
   width: 600,
   height: 300
-};
-const FANYI_SETTING_SCREEN_SIZE = {
+}, Y = {
   width: 600,
   height: 300
-};
-const SYSTEM_SETTING_SCREEN_SIZE = {
+}, z = {
   width: 600,
   height: 500
+}, k = {
+  NORMAL: G,
+  INPUTTING: K,
+  FANYI_SETTING: Y,
+  SYSTEM_SETTING: z
 };
-const SCREEN_SIZE_MAP = {
-  NORMAL: NORMAL_SCREEN_SIZE,
-  INPUTTING: COMMAND_INPUTTING_SCREEN_SIZE,
-  FANYI_SETTING: FANYI_SETTING_SCREEN_SIZE,
-  SYSTEM_SETTING: SYSTEM_SETTING_SCREEN_SIZE
-};
-function screenEvent(mainWindow2) {
-  ipcMain.on("screen_size_event", (_, type) => {
-    mainWindow2.setResizable(true);
-    const screen2 = SCREEN_SIZE_MAP[type];
-    mainWindow2.setSize(screen2.width, screen2.height);
-    mainWindow2.setResizable(false);
+function Z(e) {
+  d.on("screen_size_event", (o, s) => {
+    e.setResizable(!0);
+    const i = k[s];
+    e.setSize(i.width, i.height), e.setResizable(!1);
   });
 }
-const HOT_KEY_EVENT_NAME = "HOT_KEY_EVENT";
-let currentHotkey = "";
-let isEditHotKey = false;
-function registerHotKey(mainWindow2) {
-  updateHotkeyFromStorage(mainWindow2);
-  ipcMain.on(HOT_KEY_EVENT_NAME, (_, type) => {
-    if (type === "EDITING_OPEN_HOT_KEY") {
-      isEditHotKey = true;
-      currentHotkey = "";
-      unregisterAllHotkeys();
-    } else {
-      isEditHotKey = false;
-      updateHotkeyFromStorage(mainWindow2);
+const J = "HOT_KEY_EVENT";
+let a = "", T = !1;
+function q(e) {
+  N(e), d.on(J, (o, s) => {
+    s === "EDITING_OPEN_HOT_KEY" ? (T = !0, a = "", Q()) : (T = !1, N(e));
+  });
+}
+function N(e) {
+  e.webContents.executeJavaScript(
+    "localStorage.getItem('snow-tools-hotkey') || (navigator.platform.includes('Mac') ? 'Command+K' : 'Ctrl+K')"
+  ).then((o) => {
+    if (o !== a) {
+      a && _.unregister(a);
+      try {
+        _.register(o, () => {
+          if (e.isVisible()) {
+            if (T) return;
+            e.setOpacity(0), e.hide();
+          } else
+            e.setOpacity(1), e.focus(), m(e), e.webContents.send("window-shown");
+        }), a = o, console.log(`Hotkey updated to: ${o}`);
+      } catch (s) {
+        console.error("Failed to register hotkey:", s), e.webContents.send("hotkey-register-failed", o);
+      }
     }
   });
 }
-function updateHotkeyFromStorage(mainWindow2) {
-  mainWindow2.webContents.executeJavaScript(
-    `localStorage.getItem('snow-tools-hotkey') || (navigator.platform.includes('Mac') ? 'Command+K' : 'Ctrl+K')`
-  ).then((hotkey) => {
-    if (hotkey === currentHotkey) return;
-    if (currentHotkey) {
-      globalShortcut.unregister(currentHotkey);
-    }
-    try {
-      globalShortcut.register(hotkey, () => {
-        if (mainWindow2.isVisible()) {
-          if (isEditHotKey) return;
-          mainWindow2.setOpacity(0);
-          mainWindow2.hide();
-        } else {
-          mainWindow2.setOpacity(1);
-          mainWindow2.focus();
-          showWindow(mainWindow2);
-          mainWindow2.webContents.send("window-shown");
-        }
-      });
-      currentHotkey = hotkey;
-      console.log(`Hotkey updated to: ${hotkey}`);
-    } catch (error) {
-      console.error("Failed to register hotkey:", error);
-      mainWindow2.webContents.send("hotkey-register-failed", hotkey);
-    }
-  });
+function Q() {
+  _.unregisterAll();
 }
-function unregisterAllHotkeys() {
-  globalShortcut.unregisterAll();
-}
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-process.env.APP_ROOT = path.join(__dirname, "..");
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-let mainWindow;
-let settingWindow;
-function createWindow() {
-  const { x, y } = getOpenWindowBound();
-  mainWindow = new BrowserWindow({
+const x = r.dirname(C(import.meta.url));
+process.env.APP_ROOT = r.join(x, "..");
+const h = process.env.VITE_DEV_SERVER_URL, ne = r.join(process.env.APP_ROOT, "dist-electron"), I = r.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = h ? r.join(process.env.APP_ROOT, "public") : I;
+let t, P;
+function $() {
+  const { x: e, y: o } = b();
+  t = new w({
     // icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
     webPreferences: {
-      preload: path.join(__dirname, "preload.mjs")
+      preload: r.join(x, "preload.mjs")
     },
-    resizable: false,
-    frame: false,
-    alwaysOnTop: true,
-    width: WindowBaseConfig.width,
-    height: WindowBaseConfig.height,
-    x,
-    y,
-    show: false,
-    fullscreenable: true
-  });
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow == null ? void 0 : mainWindow.webContents.send(
+    resizable: !1,
+    frame: !1,
+    alwaysOnTop: !0,
+    width: E.width,
+    height: E.height,
+    x: e,
+    y: o,
+    show: !1,
+    fullscreenable: !0
+  }), t.webContents.on("did-finish-load", () => {
+    t == null || t.webContents.send(
       "main-process-message",
       (/* @__PURE__ */ new Date()).toLocaleString()
-    );
-    mainWindow == null ? void 0 : mainWindow.webContents.openDevTools();
-    showWindow(mainWindow);
-    screenEvent(mainWindow);
-    registerHotKey(mainWindow);
-    init();
-    mainWindow == null ? void 0 : mainWindow.on("blur", () => {
-      mainWindow == null ? void 0 : mainWindow.setOpacity(0);
-      mainWindow == null ? void 0 : mainWindow.hide();
+    ), m(t), Z(t), q(t), H(), t == null || t.on("blur", () => {
+      t == null || t.setOpacity(0), t == null || t.hide();
+    }), t == null || t.on("focus", () => {
+      t == null || t.setOpacity(1), t == null || t.show();
     });
-    mainWindow == null ? void 0 : mainWindow.on("focus", () => {
-      mainWindow == null ? void 0 : mainWindow.setOpacity(1);
-      mainWindow == null ? void 0 : mainWindow.show();
-    });
-  });
-  if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(RENDERER_DIST, "index.html"));
-  }
+  }), h ? t.loadURL(h) : t.loadFile(r.join(I, "index.html"));
 }
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-    mainWindow = null;
-  }
+p.on("window-all-closed", () => {
+  process.platform !== "darwin" && (p.quit(), t = null);
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+p.on("activate", () => {
+  w.getAllWindows().length === 0 && $();
 });
-app.whenReady().then(() => {
-  createWindow();
-  settingWindow = createSettingWindow();
-  routerEvent({
-    base: mainWindow,
-    setting: settingWindow
+p.whenReady().then(() => {
+  $(), P = M(), B({
+    base: t,
+    setting: P
   });
 });
 export {
-  MAIN_DIST,
-  RENDERER_DIST,
-  VITE_DEV_SERVER_URL
+  ne as MAIN_DIST,
+  I as RENDERER_DIST,
+  h as VITE_DEV_SERVER_URL
 };

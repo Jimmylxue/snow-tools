@@ -54,7 +54,7 @@ function createWindow() {
 			new Date().toLocaleString()
 		)
 		// mainWindow?.webContents.openDevTools() 开启F12
-		mainWindow?.webContents.openDevTools()
+		// mainWindow?.webContents.openDevTools()
 		showWindow(mainWindow!)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
