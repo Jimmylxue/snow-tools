@@ -8,7 +8,11 @@
 
 **snow-tools** 是一款专为开发者设计的轻量级效率工具集，旨在帮助程序员提高日常开发效率。它提供了翻译、Gitmoji 快速查找等实用功能，让开发工作更加顺畅。
 
-<img width="1920" alt="image" src="https://github.com/user-attachments/assets/c86ed7d8-4b6b-4794-b5e0-c2d197f86c76" />
+
+
+https://github.com/user-attachments/assets/02261018-3889-4649-a066-52ff10a76e43
+
+
 
 ## 特性
 
@@ -22,6 +26,10 @@
 - **Windows**: 使用快捷键 `Ctrl + K` 可以快速唤起应用。
 
 ## 安装
+
+1. 前往 [Release 页面](https://github.com/Jimmylxue/snow-tools/releases) 下载最新版本
+
+## 开发
 
 1. 克隆项目：
 
