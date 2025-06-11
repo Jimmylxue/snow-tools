@@ -1,6 +1,8 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Base } from '@/pages/base'
+import { bindClipBoardChange } from './hooks/clipboard'
 // import { SystemSetting } from './pages/setting'
+bindClipBoardChange()
 
 function App() {
 	return (

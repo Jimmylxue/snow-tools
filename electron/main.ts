@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, systemPreferences, dialog } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import {
@@ -11,6 +11,7 @@ import { WindowBaseConfig } from './const'
 import { routerEvent } from './ipc/router'
 import { screenEvent } from './ipc/screen'
 import { registerHotKey } from './ipc/hotkey'
+import { initClipboard } from './biz/clipboard'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -54,10 +55,11 @@ function createWindow() {
 			new Date().toLocaleString()
 		)
 		// mainWindow?.webContents.openDevTools() 开启F12
-		// mainWindow?.webContents.openDevTools()
+		mainWindow?.webContents.openDevTools()
 		showWindow(mainWindow!)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)
+		initClipboard(mainWindow!)
 		init()
 
 		mainWindow?.on('blur', () => {
@@ -77,6 +79,37 @@ function createWindow() {
 		// win.loadFile('dist/index.html')
 		mainWindow.loadFile(path.join(RENDERER_DIST, 'index.html'))
 	}
+
+	async function checkAccessibilityPermissions() {
+		if (process.platform !== 'darwin') return true
+
+		const hasAccess = await systemPreferences.isTrustedAccessibilityClient(
+			false
+		)
+		if (hasAccess) return true
+
+		const { response } = await dialog.showMessageBox({
+			type: 'question',
+			buttons: ['打开设置', '取消'],
+			title: '需要辅助功能权限',
+			message: '此功能需要访问辅助功能权限以监听系统快捷键',
+			detail: '请前往系统设置授予权限，然后重新启动应用',
+		})
+
+		if (response === 0) {
+			// 使用动态导入 child_process
+			const { exec } = await import('child_process')
+			exec(
+				'open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"'
+			)
+		}
+
+		return false
+	}
+
+	setTimeout(() => {
+		checkAccessibilityPermissions()
+	}, 3000)
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -97,11 +130,16 @@ app.on('activate', () => {
 	}
 })
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
 	createWindow()
+
 	settingWindow = createSettingWindow()
 	routerEvent({
 		base: mainWindow!,
 		setting: settingWindow,
 	})
+	console.log(
+		'辅助功能权限:',
+		await systemPreferences.isTrustedAccessibilityClient(false)
+	)
 })

@@ -8,6 +8,13 @@
 		output: 'release/${version}',
 	},
 	files: ['dist', 'dist-electron'],
+	extraResources: [
+		{
+			from: 'electron/modules/nsevent-listener/build/Release',
+			to: 'electron/modules/nsevent-listener/build/Release',
+			filter: ['**/*'],
+		},
+	],
 	mac: {
 		// icon: 'public/logo.png',
 		target: ['dmg'],

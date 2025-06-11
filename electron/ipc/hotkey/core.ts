@@ -2,6 +2,7 @@ import { BrowserWindow, globalShortcut, ipcMain } from 'electron'
 import { showWindow } from '../window'
 import { T_HOT_KEY_TYPE } from './type'
 import { HOT_KEY_EVENT_NAME } from './const'
+import { getLocalStorageHotKey } from '../../utils'
 
 let currentHotkey = ''
 /**
@@ -24,44 +25,39 @@ export function registerHotKey(mainWindow: BrowserWindow) {
 	})
 }
 
-function updateHotkeyFromStorage(mainWindow: BrowserWindow) {
-	// 从 localStorage 获取热键设置
-	mainWindow.webContents
-		.executeJavaScript(
-			`localStorage.getItem('snow-tools-hotkey') || (navigator.platform.includes('Mac') ? 'Command+K' : 'Ctrl+K')`
-		)
-		.then((hotkey: string) => {
-			// 如果热键没有变化，则不做任何操作
-			if (hotkey === currentHotkey) return
+async function updateHotkeyFromStorage(mainWindow: BrowserWindow) {
+	const hotkey = await getLocalStorageHotKey(mainWindow)
 
-			// 注销旧的热键
-			if (currentHotkey) {
-				globalShortcut.unregister(currentHotkey)
-			}
+	// 如果热键没有变化，则不做任何操作
+	if (hotkey === currentHotkey) return
 
-			try {
-				// 注册新的热键
-				globalShortcut.register(hotkey, () => {
-					if (mainWindow.isVisible()) {
-						if (isEditHotKey) return
-						mainWindow.setOpacity(0)
-						mainWindow.hide()
-					} else {
-						mainWindow.setOpacity(1)
-						mainWindow.focus()
-						showWindow(mainWindow)
-						mainWindow.webContents.send('window-shown')
-					}
-				})
+	// 注销旧的热键
+	if (currentHotkey) {
+		globalShortcut.unregister(currentHotkey)
+	}
 
-				currentHotkey = hotkey
-				console.log(`Hotkey updated to: ${hotkey}`)
-			} catch (error) {
-				console.error('Failed to register hotkey:', error)
-				// 可以在这里通知渲染进程注册失败
-				mainWindow.webContents.send('hotkey-register-failed', hotkey)
+	try {
+		// 注册新的热键
+		globalShortcut.register(hotkey, () => {
+			if (mainWindow.isVisible()) {
+				if (isEditHotKey) return
+				mainWindow.setOpacity(0)
+				mainWindow.hide()
+			} else {
+				mainWindow.setOpacity(1)
+				mainWindow.focus()
+				showWindow(mainWindow)
+				mainWindow.webContents.send('window-shown')
 			}
 		})
+
+		currentHotkey = hotkey
+		console.log(`Hotkey updated to: ${hotkey}`)
+	} catch (error) {
+		console.error('Failed to register hotkey:', error)
+		// 可以在这里通知渲染进程注册失败
+		mainWindow.webContents.send('hotkey-register-failed', hotkey)
+	}
 }
 
 // 提供一个方法来获取当前热键（可选）
