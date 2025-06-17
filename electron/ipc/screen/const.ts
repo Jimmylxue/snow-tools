@@ -1,23 +1,33 @@
 import { T_SCREEN_SIZE_TYPE, T_SCREEN_VALUE } from './type'
 
-const NORMAL_SCREEN_SIZE = {
+export const NORMAL_SCREEN_SIZE: T_SCREEN_VALUE = {
 	width: 600,
 	height: 62,
+	topProportion: 1.3,
 }
 
-const COMMAND_INPUTTING_SCREEN_SIZE = {
+const COMMAND_INPUTTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 	width: 600,
 	height: 300,
+	topProportion: 1.3,
 }
 
-const FANYI_SETTING_SCREEN_SIZE = {
+const FANYI_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 	width: 600,
 	height: 300,
+	topProportion: 1.3,
 }
 
-const SYSTEM_SETTING_SCREEN_SIZE = {
+const SYSTEM_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 	width: 600,
-	height: 500,
+	height: 300,
+	topProportion: 1.3,
+}
+
+const CLIPBOARD_HISTORY_PAGE_SIZE: T_SCREEN_VALUE = {
+	width: 600,
+	height: 600,
+	topProportion: 1.3,
 }
 
 export const SCREEN_SIZE_MAP: { [key in T_SCREEN_SIZE_TYPE]: T_SCREEN_VALUE } =
@@ -26,4 +36,5 @@ export const SCREEN_SIZE_MAP: { [key in T_SCREEN_SIZE_TYPE]: T_SCREEN_VALUE } =
 		INPUTTING: COMMAND_INPUTTING_SCREEN_SIZE,
 		FANYI_SETTING: FANYI_SETTING_SCREEN_SIZE,
 		SYSTEM_SETTING: SYSTEM_SETTING_SCREEN_SIZE,
+		CLIPBOARD_HISTORY_PAGE: CLIPBOARD_HISTORY_PAGE_SIZE,
 	}

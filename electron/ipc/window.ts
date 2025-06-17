@@ -1,12 +1,14 @@
 import { BrowserWindow, screen } from 'electron'
-import { WindowBaseConfig, WindowSettingConfig } from '../const'
+import { WindowSettingConfig } from '../const'
 import path from 'node:path'
 import { RENDERER_DIST, VITE_DEV_SERVER_URL } from '../main'
 import { fileURLToPath } from 'node:url'
+import { currentScreen } from './screen'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export function getOpenWindowBound() {
+	const { width } = currentScreen.value
 	const currentDisplay = screen.getCursorScreenPoint()
 	const displays = screen.getAllDisplays()
 
@@ -20,11 +22,8 @@ export function getOpenWindowBound() {
 	})
 
 	return {
-		x:
-			display!.bounds.x +
-			display!.bounds.width / 2 -
-			WindowBaseConfig.width / 2, // 窗口居中
-		y: display!.bounds.y + display!.bounds.height / 3,
+		x: display!.bounds.x + display!.bounds.width / 2 - width / 2, // 窗口居中
+		y: display!.bounds.y + display!.bounds.height / 4.5,
 	}
 }
 

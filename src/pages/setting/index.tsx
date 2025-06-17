@@ -206,7 +206,7 @@ export function SystemSetting({ show, onClose }: TProps) {
 					}
 				}}
 			>
-				<DialogContent className="max-w-[800px] overflow-y-auto">
+				<DialogContent className="max-w-full h-full overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>系统设置</DialogTitle>
 						<DialogDescription>根据您的偏好自定义软件行为</DialogDescription>

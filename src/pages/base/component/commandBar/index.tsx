@@ -10,7 +10,7 @@ import {
 	CommandList,
 	CommandSeparator,
 } from '@/components/ui/command'
-import { BookType, Search, Settings, Smile } from 'lucide-react'
+import { BookType, Search, Settings, Smile, ClipboardList } from 'lucide-react'
 import { Loading } from '@/components/common/Loading'
 import { keyMap } from '../../core/command/map'
 import { inputFocus } from '@/lib/utils'
@@ -100,6 +100,10 @@ export const CommandBar = observer(() => {
 								<CommandItem>
 									<BookType />
 									<span>fanyi 翻译</span>
+								</CommandItem>
+								<CommandItem>
+									<ClipboardList />
+									<span>clipboard 剪切板</span>
 								</CommandItem>
 							</CommandGroup>
 							<CommandSeparator />

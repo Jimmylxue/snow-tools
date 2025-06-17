@@ -1,15 +1,10 @@
 import { app, BrowserWindow, systemPreferences, dialog } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import {
-	createSettingWindow,
-	getOpenWindowBound,
-	showWindow,
-} from './ipc/window'
+import { createSettingWindow, showWindow } from './ipc/window'
 import { init } from './ipc/apps'
-import { WindowBaseConfig } from './const'
 import { routerEvent } from './ipc/router'
-import { screenEvent } from './ipc/screen'
+import { currentScreen, screenEvent } from './ipc/screen'
 import { registerHotKey } from './ipc/hotkey'
 import { initClipboard } from './biz/clipboard'
 
@@ -30,7 +25,7 @@ let mainWindow: BrowserWindow | null
 let settingWindow: BrowserWindow
 
 function createWindow() {
-	const { x, y } = getOpenWindowBound()
+	const { width, height } = currentScreen.value
 
 	mainWindow = new BrowserWindow({
 		// icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
@@ -40,10 +35,8 @@ function createWindow() {
 		resizable: false,
 		frame: false,
 		alwaysOnTop: true,
-		width: WindowBaseConfig.width,
-		height: WindowBaseConfig.height,
-		x,
-		y,
+		width,
+		height,
 		show: false,
 		fullscreenable: true,
 	})

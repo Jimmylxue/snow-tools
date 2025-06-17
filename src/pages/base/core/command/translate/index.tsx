@@ -16,14 +16,11 @@ import { sendWindowSizeEvent } from '@/hooks/ipc/window'
 import { Setting } from './setting'
 import { TranslateContextProvider, useTranslateConfig } from './context'
 import SimlePng from '@/assets/img/smile.png'
+import { TBaseCommandProps } from '../type'
 
 const placeholderText = 'Please enter the translation content'
 
-type TProps = {
-	destructCommand: () => void
-}
-
-export const Child = observer(({ destructCommand }: TProps) => {
+export const Child = observer(({ destructCommand }: TBaseCommandProps) => {
 	const { from, to } = useTranslateConfig()
 
 	const [translateText, setTranslateText] = useState<string>('')

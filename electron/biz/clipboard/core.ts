@@ -1,17 +1,22 @@
 import { TCopyItem } from './type'
 import { BrowserWindow } from 'electron'
 
-let preText: string = ''
-
+let preTextList: string[] = []
 export function copyCallBack(mainWindow: BrowserWindow, text: string) {
-	if (preText === text) {
+	if (text.trim() === '') {
 		return
 	}
-	preText = text
+	if (preTextList.includes(text)) {
+		return
+	}
+	preTextList.push(text)
+	if (preTextList.length === 20) {
+		preTextList = preTextList.slice(1)
+	}
 
 	const copyItem: TCopyItem = {
-		text: preText,
-		date: Date.now(),
+		content: text,
+		createdTime: Date.now(),
 		type: 'TEXT',
 		isCollect: false,
 	}

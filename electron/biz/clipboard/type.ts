@@ -6,8 +6,8 @@ export enum ECOPY {
 export type T_COPY_TYPE = `${ECOPY}`
 
 export type TCopyItem = {
-	text: string
-	date: number
+	content: string
+	createdTime: number
 	type: T_COPY_TYPE
 	isCollect: boolean
 }

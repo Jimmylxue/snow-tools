@@ -33,7 +33,7 @@ export function Setting({ show, onClose }: TProps) {
 				}
 			}}
 		>
-			<DialogContent className=" max-w-full max-h-full h-full">
+			<DialogContent className=" max-w-full h-screen h-full">
 				<DialogHeader>
 					<DialogTitle>翻译设置</DialogTitle>
 					<DialogDescription>翻译语种设置</DialogDescription>

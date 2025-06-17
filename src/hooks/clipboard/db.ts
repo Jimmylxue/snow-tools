@@ -1,147 +1,124 @@
+import Dexie, { type EntityTable } from 'dexie'
 import { TCopyItem } from 'electron/biz/clipboard/type'
+import { useEffect, useState } from 'react'
 
-interface ClipboardItem {
-	id: number
-	content: TCopyItem
-	timestamp: number
-}
-
-const DB_NAME = 'clipboardDB'
-const STORE_NAME = 'clipboardItems'
-const INDEX_NAME = 'timestamp_idx' // 统一定义索引名
-let dbInstance: IDBDatabase | null = null
-
-// 统一数据库版本号，升级时修改此版本号
-const DB_VERSION = 2
-
-export async function getDB(): Promise<IDBDatabase> {
-	if (dbInstance) return dbInstance
-
-	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, DB_VERSION)
-
-		request.onupgradeneeded = e => {
-			const db = (e.target as IDBOpenDBRequest).result
-			const tx = (e.target as IDBOpenDBRequest).transaction
-
-			// 创建或升级对象存储
-			let store: IDBObjectStore
-			if (!db.objectStoreNames.contains(STORE_NAME)) {
-				store = db.createObjectStore(STORE_NAME, {
-					keyPath: 'id',
-					autoIncrement: true,
-				})
-			} else {
-				store = tx.objectStore(STORE_NAME)
-			}
-
-			// 确保索引存在
-			if (!store.indexNames.contains(INDEX_NAME)) {
-				store.createIndex(INDEX_NAME, 'timestamp')
-			}
-		}
-
-		request.onsuccess = e => {
-			dbInstance = (e.target as IDBOpenDBRequest).result
-			dbInstance.onclose = () => {
-				dbInstance = null
-			}
-			resolve(dbInstance)
-		}
-
-		request.onerror = e => {
-			reject((e.target as IDBOpenDBRequest).error)
-		}
-	})
-}
-
-/**
- * 存 剪切板
- */
-export async function saveClipboardItem(content: TCopyItem) {
-	try {
-		const db = await getDB()
-		return new Promise((resolve, reject) => {
-			console.log('add 了', content)
-			const tx = db.transaction(STORE_NAME, 'readwrite')
-			tx.objectStore(STORE_NAME).add({
-				content,
-				timestamp: Date.now(),
-			})
-			tx.oncomplete = () => resolve(true)
-			tx.onerror = e => reject((e.target as IDBRequest).error)
-		})
-	} catch (err) {
-		console.error('保存失败:', err)
-		return false
-	}
-}
-
-/**
- * 获取分页剪切板数据（修复版）
- */
-export async function getClipboardList(params: {
+type TPageQuery = {
 	page: number
 	pageSize: number
-}): Promise<{ data: ClipboardItem[]; total: number }> {
-	const db = await getDB()
+}
 
-	return new Promise((resolve, reject) => {
-		// 使用单个事务处理计数和查询
-		const tx = db.transaction(STORE_NAME, 'readonly')
-		const store = tx.objectStore(STORE_NAME)
+export type TQueryParams = Partial<TCopyItem> & TPageQuery
 
-		// 1. 获取总数
-		const countRequest = store.count()
+export const clipboardDb = new Dexie('MyClipboard') as Dexie & {
+	items: EntityTable<TCopyItem & { id: number }, 'id'>
+}
 
-		countRequest.onsuccess = () => {
-			const total = countRequest.result
-			const data: ClipboardItem[] = []
+clipboardDb.version(1).stores({
+	items: '++id, content, type, createdTime, isCollect', // 主键是自增的id
+})
 
-			// 2. 获取分页数据
-			const index = store.index(INDEX_NAME) // 使用统一定义的索引名
-			const cursorRequest = index.openCursor(null, 'prev')
+export function useClipboardDB() {
+	const [page, setPage] = useState<number>(1)
 
-			let skipped = false
-			let itemsCollected = 0
-			const skipCount = (params.page - 1) * params.pageSize
+	// 用于跟踪已加载的最新数据的日期，防止重复
+	const [latestLoadedDate, setLatestLoadedDate] = useState(Date.now())
 
-			cursorRequest.onsuccess = e => {
-				const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result
+	const loadMore = () => {
+		setPage(page + 1)
+	}
 
-				if (!cursor) {
-					resolve({ data, total })
-					return
-				}
+	// 检查是否有新数据
+	const checkNewData = async () => {
+		const newestItem = await clipboardDb.items
+			.orderBy('createdTime')
+			.reverse()
+			.first()
 
-				// 跳过前面页的数据
-				if (!skipped && skipCount > 0) {
-					skipped = true
-					cursor.advance(skipCount)
-					return
-				}
+		if (newestItem && newestItem.createdTime > latestLoadedDate) {
+			// 有新数据，重置到第一页
+			setPage(1)
+			setLatestLoadedDate(newestItem.createdTime)
+		}
+	}
 
-				// 收集当前页数据
-				if (itemsCollected < params.pageSize) {
-					data.push(cursor.value)
-					itemsCollected++
-					cursor.continue()
-				} else {
-					resolve({ data, total })
-				}
-			}
+	/**
+	 * 增加Clipboard
+	 */
+	const addClipBoard = async (params: Omit<TCopyItem, 'id'>) => {
+		await clipboardDb.items.add(params)
+	}
 
-			cursorRequest.onerror = () => {
-				reject(new Error('Failed to read data with cursor'))
-			}
+	/**
+	 * 更新Clipboard
+	 */
+	const updateClipBoard = async (
+		params: Partial<TCopyItem> & { id: number }
+	) => {
+		const { id, ...args } = params
+		await clipboardDb.items.update(id, args)
+	}
+
+	/**
+	 * 删除Clipboard
+	 */
+	const deleteClipBoard = async (id: number) => {
+		await clipboardDb.items.delete(id)
+	}
+
+	const queryClipBoard = async (params: TQueryParams) => {
+		const { page, pageSize, ...otherSearchParam } = params
+
+		// 创建基础查询
+		let query = clipboardDb.items.orderBy('createdTime').reverse()
+
+		// 动态添加 where 条件
+		if (otherSearchParam.content) {
+			query = query.filter(item =>
+				item.content.includes(otherSearchParam.content!)
+			)
+		}
+		if (otherSearchParam.isCollect) {
+			query = query.filter(
+				item => item.isCollect === otherSearchParam.isCollect
+			)
+		}
+		// 添加其他可能的条件...
+
+		const total = await query.clone().count()
+		const items = await query
+			.offset((page - 1) * pageSize)
+			.limit(pageSize)
+			.toArray()
+
+		return { items, total }
+	}
+
+	useEffect(() => {
+		/**
+		 * 删除三天前的 所有数据 应该怎么写
+		 */
+		const deleteOldData = async () => {
+			const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
+			await clipboardDb.items.where('createdTime').below(threeDaysAgo).delete()
 		}
 
-		countRequest.onerror = () => {
-			reject(new Error('Failed to count records'))
-		}
+		// 每天执行一次清理
+		const interval = setInterval(deleteOldData, 24 * 60 * 60 * 1000)
 
-		tx.onerror = () => {
-			reject(new Error('Transaction failed'))
+		// 首次加载时执行一次
+		deleteOldData()
+
+		return () => {
+			clearInterval(interval)
 		}
-	})
+	}, [])
+
+	return {
+		loadMore,
+		checkNewData,
+		addClipBoard,
+		updateClipBoard,
+		deleteClipBoard,
+		queryClipBoard,
+	}
 }
