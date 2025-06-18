@@ -21,4 +21,9 @@ export function screenEvent(mainWindow: BrowserWindow) {
 		mainWindow.setSize(screen.width, screen.height)
 		mainWindow.setResizable(false)
 	})
+
+	ipcMain.on('screen_close_event', () => {
+		mainWindow?.setOpacity(0)
+		mainWindow?.hide()
+	})
 }

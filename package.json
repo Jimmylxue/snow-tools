@@ -31,6 +31,7 @@
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
+    "dayjs": "^1.11.13",
     "dexie": "^4.0.11",
     "dexie-react-hooks": "^1.1.7",
     "lodash-es": "^4.17.21",
@@ -43,6 +44,7 @@
     "react-dom": "^18.2.0",
     "react-infinite-scroll-component": "^6.1.0",
     "react-router-dom": "^7.0.1",
+    "snow-tool": "link:",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7"

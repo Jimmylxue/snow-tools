@@ -1,6 +1,7 @@
 import { TCopyItem } from 'electron/biz/clipboard/type'
 import { useState } from 'react'
 import { Sparkle } from 'lucide-react'
+import { formatDistanceTime } from '@/utils/time'
 
 type TProps = {
 	content: TCopyItem
@@ -11,7 +12,7 @@ type TProps = {
 	/**
 	 * 收藏
 	 */
-	onSave: () => void
+	onSave: (status: boolean) => void
 }
 
 export function CopyItem({
@@ -50,7 +51,7 @@ export function CopyItem({
 				{content.content}
 			</div>
 			<div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-				<div>{index + 1}分钟前</div>
+				<div>{formatDistanceTime(content.createdTime)}</div>
 				<div className="flex items-center space-x-2">
 					<span>{content.content.length}字符</span>
 					{isClamped && !expanded && (
@@ -86,7 +87,7 @@ export function CopyItem({
 					</button>
 					<button
 						className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-						onClick={onSave}
+						onClick={() => onSave(content.isCollect ? false : true)}
 					>
 						{content.isCollect ? (
 							<Sparkle color="#f8dc54" size="20" />

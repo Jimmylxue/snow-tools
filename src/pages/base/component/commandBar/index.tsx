@@ -1,5 +1,9 @@
-import { listenScreen, sendWindowSizeEvent } from '@/hooks/ipc/window'
-import { useEffect, useState, ChangeEvent } from 'react'
+import {
+	listenScreen,
+	sendHideWindowEvent,
+	sendWindowSizeEvent,
+} from '@/hooks/ipc/window'
+import { useEffect, useState, ChangeEvent, useCallback } from 'react'
 import { observer } from 'mobx-react-lite'
 import {
 	Command,
@@ -40,6 +44,28 @@ export const CommandBar = observer(() => {
 		}, 50)
 		return () => clearTimeout(id)
 	}, [])
+
+	const destructCommand = useCallback(() => {
+		setCurrentUseCommand('')
+		setTimeout(() => {
+			inputFocus(inputId)
+		}, 100)
+	}, [])
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				event.preventDefault()
+				if (currentUseCommand) {
+					destructCommand()
+				} else {
+					sendHideWindowEvent()
+				}
+			}
+		}
+		window.addEventListener('keydown', handleKeyDown)
+		return () => window.removeEventListener('keydown', handleKeyDown)
+	}, [currentUseCommand, destructCommand])
 
 	const goalCommand = keyMap[currentUseCommand]
 
@@ -109,14 +135,7 @@ export const CommandBar = observer(() => {
 					)}
 				</Command>
 			) : (
-				<goalCommand.content
-					destructCommand={() => {
-						setCurrentUseCommand('')
-						setTimeout(() => {
-							inputFocus(inputId)
-						}, 100)
-					}}
-				/>
+				<goalCommand.content destructCommand={destructCommand} />
 			)}
 			<SystemSetting
 				show={systemSettingShow}

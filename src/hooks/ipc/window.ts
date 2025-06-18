@@ -25,3 +25,7 @@ export function listenScreen() {
 		ipc.off('window-shown', windowShownFn)
 	}
 }
+
+export function sendHideWindowEvent() {
+	ipc.send('screen_close_event')
+}

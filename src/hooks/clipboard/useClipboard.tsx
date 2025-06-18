@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useClipboardDB } from './db'
+import { TClipboardItem, useClipboardDB } from './db'
 import { TCopyItem } from 'electron/biz/clipboard/type'
 import { uniqBy } from 'lodash-es'
 
@@ -10,7 +10,7 @@ type TParams = {
 export function useClipboard({ queryParams }: TParams) {
 	const [queryData, setQueryData] = useState<{
 		total: number
-		items: (TCopyItem & { id: number })[]
+		items: TClipboardItem[]
 	}>()
 
 	const page = useRef<number>(1)

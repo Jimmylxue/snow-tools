@@ -3,12 +3,12 @@ import { ClipboardList, X } from 'lucide-react'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { TBaseCommandProps } from '../type'
 import { toast } from 'sonner'
-import { useClipboardDB } from '@/hooks/clipboard/db'
+import { TClipboardItem, useClipboardDB } from '@/hooks/clipboard/db'
 import { CopyItem } from './components/CopyItem'
 import { useClipboard } from '@/hooks/clipboard/useClipboard'
 import { clipboardFilterArr } from './const'
 import InfiniteScroll from 'react-infinite-scroll-component'
-import { debounce } from 'lodash-es'
+import { cloneDeep, debounce } from 'lodash-es'
 
 function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0)
@@ -22,15 +22,24 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 		queryParams: {},
 	})
 
+	/**
+	 * 再存一份 用于做 收藏&取消收藏时 状态的立即同步更新
+	 */
+	const [clipboards, setClipboards] = useState<TClipboardItem[]>([])
+
+	useEffect(() => {
+		setClipboards(queryData?.items || [])
+	}, [queryData])
+
 	// 复制选中项内容
 	const copySelectedItem = useCallback(() => {
-		if (queryData?.items?.[selectedIndex]) {
-			navigator.clipboard.writeText(queryData?.items?.[selectedIndex]?.content)
+		if (clipboards?.[selectedIndex]) {
+			navigator.clipboard.writeText(clipboards?.[selectedIndex]?.content)
 			toast('The copy has been copied', {
 				duration: 700,
 			})
 		}
-	}, [selectedIndex, queryData?.items])
+	}, [selectedIndex, clipboards])
 
 	// 优化后的滚动函数
 	const scrollToItem = useCallback((index: number) => {
@@ -50,10 +59,6 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 	const handleKeyDown = useCallback(
 		(event: KeyboardEvent) => {
 			switch (event.key) {
-				case 'Escape':
-					event.preventDefault()
-					destructCommand()
-					break
 				case 'ArrowUp':
 					event.preventDefault()
 					setSelectedIndex(prev => {
@@ -76,7 +81,7 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 					break
 			}
 		},
-		[destructCommand, copySelectedItem, scrollToItem, queryData]
+		[copySelectedItem, scrollToItem, queryData]
 	)
 
 	useEffect(() => {
@@ -171,11 +176,11 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 				className="flex-1 overflow-y-auto p-4 space-y-3"
 			>
 				<InfiniteScroll
-					dataLength={queryData?.items?.length || 0}
+					dataLength={clipboards?.length || 0}
 					next={() => {
 						fetchNextPage()
 					}}
-					hasMore={(queryData?.total || 0) > (queryData?.items?.length || 0)}
+					hasMore={(queryData?.total || 0) > (clipboards?.length || 0)}
 					loader={
 						<div className="w-full text-center text-gray-400 mb-3">
 							加载更多中
@@ -188,7 +193,7 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 					}
 					scrollableTarget="clipboardList"
 				>
-					{queryData?.items?.map((item, index) => (
+					{clipboards?.map((item, index) => (
 						<CopyItem
 							key={index}
 							content={item}
@@ -199,11 +204,14 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 								scrollToItem(index)
 							}}
 							onDoubleClick={copySelectedItem}
-							onSave={async () => {
+							onSave={async status => {
 								await updateClipBoard({
 									id: item.id,
-									isCollect: true,
+									isCollect: status,
 								})
+								const _clipboardArr = cloneDeep(clipboards)
+								_clipboardArr[index].isCollect = status
+								setClipboards(_clipboardArr)
 								toast('操作成功', {
 									duration: 700,
 								})

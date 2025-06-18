@@ -7,10 +7,12 @@ type TPageQuery = {
 	pageSize: number
 }
 
+export type TClipboardItem = TCopyItem & { id: number }
+
 export type TQueryParams = Partial<TCopyItem> & TPageQuery
 
 export const clipboardDb = new Dexie('MyClipboard') as Dexie & {
-	items: EntityTable<TCopyItem & { id: number }, 'id'>
+	items: EntityTable<TClipboardItem, 'id'>
 }
 
 clipboardDb.version(1).stores({
