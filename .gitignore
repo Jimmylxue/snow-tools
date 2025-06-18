@@ -25,3 +25,5 @@ release
 *.sln
 *.sw?
 
+electron/modules/*/build
+
