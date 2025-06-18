@@ -49,10 +49,8 @@ export const CommandBar = observer(() => {
 				<Command
 					onKeyDown={e => {
 						if (e.key === 'Enter' && chooseCommand) {
-							console.log('enter', chooseCommand)
 							setCurrentUseCommand(chooseCommand.split(' ')[0])
 						}
-						// console.log('keydown', e)
 					}}
 					onValueChange={val => {
 						/**

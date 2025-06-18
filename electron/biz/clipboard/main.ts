@@ -8,7 +8,6 @@ import { debounce } from 'lodash-es'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const require = createRequire(import.meta.url)
-console.log('import.meta.url', import.meta.url)
 
 // 创建防抖版本的 copyCallBack
 const debouncedCopyCallBack = debounce(copyCallBack, 1000)

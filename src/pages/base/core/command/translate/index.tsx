@@ -159,7 +159,7 @@ export const Child = observer(({ destructCommand }: TBaseCommandProps) => {
 	)
 })
 
-export const TranslateContent = ({ destructCommand }: TProps) => {
+export const TranslateContent = ({ destructCommand }: TBaseCommandProps) => {
 	return (
 		<TranslateContextProvider>
 			<Child destructCommand={destructCommand} />

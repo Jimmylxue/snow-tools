@@ -173,7 +173,6 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 				<InfiniteScroll
 					dataLength={queryData?.items?.length || 0}
 					next={() => {
-						console.log('fff')
 						fetchNextPage()
 					}}
 					hasMore={(queryData?.total || 0) > (queryData?.items?.length || 0)}

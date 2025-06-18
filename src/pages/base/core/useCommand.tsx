@@ -18,7 +18,6 @@ export function useCommand() {
 	const inputText = isHitCommand ? contentCommand : command
 
 	const updateInputText = (text: string) => {
-		console.log('text~', text)
 		commandStore.isEnter = false
 		if (isHitCommand) {
 			commandStore.contentCommand = text

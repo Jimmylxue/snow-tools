@@ -47,8 +47,9 @@ function createWindow() {
 			'main-process-message',
 			new Date().toLocaleString()
 		)
-		// mainWindow?.webContents.openDevTools() 开启F12
-		mainWindow?.webContents.openDevTools()
+		if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
+			mainWindow?.webContents.openDevTools()
+		}
 		showWindow(mainWindow!)
 		screenEvent(mainWindow!)
 		registerHotKey(mainWindow!)

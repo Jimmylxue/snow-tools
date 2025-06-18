@@ -39,7 +39,6 @@ export function useClipboard({ queryParams }: TParams) {
 			page: page.current,
 			pageSize,
 		})
-		console.log('fetchNext了', queryData)
 		setQueryData(preData => {
 			return {
 				total: res.total,
