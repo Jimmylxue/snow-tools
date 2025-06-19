@@ -8,7 +8,7 @@
 
 **snow-tools** 是一款专为开发者设计的轻量级效率工具集，旨在帮助程序员提高日常开发效率。它提供了翻译、Gitmoji 快速查找等实用功能，让开发工作更加顺畅。
 
-https://github.com/user-attachments/assets/02261018-3889-4649-a066-52ff10a76e43
+https://github.com/user-attachments/assets/34a5f217-7ece-4ea1-b136-8eef449a0031
 
 ## 特性
 
@@ -20,6 +20,16 @@ https://github.com/user-attachments/assets/02261018-3889-4649-a066-52ff10a76e43
 
 - **Mac**: 使用快捷键 `Command + K` 可以快速唤起应用。
 - **Windows**: 使用快捷键 `Ctrl + K` 可以快速唤起应用。
+
+## 支持指令
+
+- **translate**: 快捷翻译
+  <img width="1920" alt="image" src="https://github.com/user-attachments/assets/3535e020-540e-4182-9205-577719a2d04f" />
+- **gitmoji**: giimoji快捷选取
+  <img width="1920" alt="image" src="https://github.com/user-attachments/assets/d2aeaf81-d788-413f-80fb-f50b5ab509f2" />
+- **clipboard**: 系统级别剪切板，随时随地查看复制的内容
+  <img width="1920" alt="image" src="https://github.com/user-attachments/assets/bfb44bc6-b41b-43e1-a488-88f8f6ad0437" />
+
 
 ## 安装
 
@@ -69,3 +79,4 @@ https://github.com/user-attachments/assets/02261018-3889-4649-a066-52ff10a76e43
 
 - 组件库：[shadcn](https://ui.shadcn.com/docs/installation)
 - icon：[lucide-react](https://lucide.dev/guide/packages/lucide-react)
+
