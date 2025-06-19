@@ -44,7 +44,6 @@
     "react-dom": "^18.2.0",
     "react-infinite-scroll-component": "^6.1.0",
     "react-router-dom": "^7.0.1",
-    "snow-tool": "link:",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7"
