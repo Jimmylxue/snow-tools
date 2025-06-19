@@ -123,7 +123,7 @@ export const CommandBar = observer(() => {
 							<CommandGroup heading="tools">
 								<CommandItem>
 									<BookType />
-									<span>fanyi 翻译</span>
+									<span>translate 翻译</span>
 								</CommandItem>
 								<CommandItem>
 									<ClipboardList />

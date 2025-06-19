@@ -217,7 +217,7 @@ export const TranslateContent = ({ destructCommand }: TBaseCommandProps) => {
 
 export const TRANSLATE_COMMAND = {
 	icon: <BookType className="mr-2 shrink-0 opacity-50" />,
-	key: 'fanyi',
+	key: 'translate',
 	placeholder: placeholderText,
 	content: TranslateContent,
 }
