@@ -28,7 +28,7 @@ function createWindow() {
 	const { width, height } = currentScreen.value
 
 	mainWindow = new BrowserWindow({
-		// icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
+		icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
 		webPreferences: {
 			preload: path.join(__dirname, 'preload.mjs'),
 		},
