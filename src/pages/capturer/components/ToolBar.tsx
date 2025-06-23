@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { SelectionRect, TAbsolutePosition } from '../type'
+import { TCapturerMessage } from '..'
 
 type TProps = {
 	activeState: string
@@ -13,6 +14,7 @@ type TProps = {
 	onColorChange: (color: string) => void
 	drawWidth: number
 	onWidthChange: (width: number) => void
+	source?: TCapturerMessage
 }
 
 export function ToolBar({
@@ -25,6 +27,7 @@ export function ToolBar({
 	onColorChange,
 	drawWidth,
 	onWidthChange,
+	source,
 }: TProps) {
 	const [position, setPosition] = useState<TAbsolutePosition>()
 	const [showColorPicker, setShowColorPicker] = useState(false)
@@ -62,10 +65,16 @@ export function ToolBar({
 
 	// 定位计算
 	useEffect(() => {
-		if (selection && containerRect && toolbarSize.width > 0) {
+		if (selection && containerRect && toolbarSize.width > 0 && source) {
 			const { start, end } = selection
-			const selectionBottom = Math.max(start.y / 2, end.y / 2)
-			const selectionTop = Math.min(start.y / 2, end.y / 2)
+			const selectionBottom = Math.max(
+				start.y / source.scaleFactor,
+				end.y / source.scaleFactor
+			)
+			const selectionTop = Math.min(
+				start.y / source.scaleFactor,
+				end.y / source.scaleFactor
+			)
 
 			// 计算可用空间
 			const spaceBelow = containerRect.height - selectionBottom - margin
@@ -73,7 +82,7 @@ export function ToolBar({
 
 			// 决定显示位置（优先下方，然后上方，最后选区内部）
 			let top: number
-			let left = start.x / 2
+			let left = start.x / source.scaleFactor
 
 			if (spaceBelow >= toolbarSize.height) {
 				top = selectionBottom + margin // 下方
@@ -93,7 +102,7 @@ export function ToolBar({
 
 			setPosition({ top, left })
 		}
-	}, [selection, containerRect, toolbarSize])
+	}, [selection, containerRect, toolbarSize, source])
 
 	return (
 		<div

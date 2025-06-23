@@ -9,6 +9,7 @@ import { SelectionBorder } from './components/SelectionBorder'
 export type TCapturerMessage = {
 	source: string
 	type: 'fullscreen' | 'region'
+	scaleFactor: number
 }
 
 const capturerObserve = new Observable<TCapturerMessage>()
@@ -95,8 +96,8 @@ export function Capturer() {
 			const visibleCanvas = visibleCanvasRef.current!
 			visibleCanvas.width = img.naturalWidth
 			visibleCanvas.height = img.naturalHeight
-			visibleCanvas.style.width = `${img.naturalWidth / 2}px`
-			visibleCanvas.style.height = `${img.naturalHeight / 2}px`
+			visibleCanvas.style.width = `${img.naturalWidth / source.scaleFactor}px`
+			visibleCanvas.style.height = `${img.naturalHeight / source.scaleFactor}px`
 
 			const visibleCtx = visibleCanvas.getContext('2d')!
 			visibleCtx.drawImage(img, 0, 0, visibleCanvas.width, visibleCanvas.height)
@@ -390,7 +391,7 @@ export function Capturer() {
 	return (
 		<div
 			ref={containerRef}
-			className="relative w-screen h-screen overflow-hidden bg-gray-900"
+			className="relative w-screen h-screen overflow-hidden bg-transparent"
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
 		>
@@ -429,6 +430,7 @@ export function Capturer() {
 				drawWidth={drawWidth}
 				onColorChange={setDrawColor}
 				onWidthChange={setDrawWidth}
+				source={source}
 				onTriggerEvent={status => {
 					switch (status) {
 						case 'RESET':

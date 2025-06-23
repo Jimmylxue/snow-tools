@@ -123,36 +123,60 @@ class CaptureWindow implements TWindows {
 	}
 
 	captureFn = async () => {
-		if (this.instance?.isVisible() || this.isEditingHotKey) {
-			/**已展示不可重复开启 */
-			return
-		}
-		const scaleFactor = screen.getPrimaryDisplay().scaleFactor
-		const mousePoint = screen.getCursorScreenPoint()
-		const currentDisplay = screen.getDisplayNearestPoint(mousePoint)
-		const { width, height, x, y } = currentDisplay!.bounds
-		this.instance?.setBounds({ x, y, width, height })
-		// navigate.routerMap?.base.instance?.setBounds({ height: 60 })
-		const sources = await desktopCapturer.getSources({
-			types: ['screen'],
-			thumbnailSize: {
-				width: width * scaleFactor,
-				height: height * scaleFactor,
-			},
-		})
+		try {
+			if (this.instance?.isVisible() || this.isEditingHotKey) {
+				/**已展示不可重复开启 */
+				return
+			}
+			const scaleFactor = screen.getPrimaryDisplay().scaleFactor
+			const mousePoint = screen.getCursorScreenPoint()
+			const currentDisplay = screen.getDisplayNearestPoint(mousePoint)
 
-		const primarySource = sources.find(
-			source => source.display_id === currentDisplay.id.toString()
-		)
+			if (!currentDisplay) {
+				throw new Error('No display found')
+			}
 
-		if (primarySource) {
+			const { width, height, x, y } = currentDisplay.bounds
+
+			// Make sure width and height are integers
+			const displayBounds = {
+				x: Math.floor(x),
+				y: Math.floor(y),
+				width: Math.floor(width),
+				height: Math.floor(height),
+			}
+
+			this.instance?.setBounds(displayBounds)
+
+			const sources = await desktopCapturer.getSources({
+				types: ['screen'],
+				thumbnailSize: {
+					width: Math.floor(width * scaleFactor),
+					height: Math.floor(height * scaleFactor),
+				},
+			})
+
+			const primarySource = sources.find(
+				source => source.display_id === currentDisplay.id.toString()
+			)
+
+			if (!primarySource || !primarySource.thumbnail) {
+				throw new Error(
+					'Screen capture failed - no source or thumbnail available'
+				)
+			}
+
 			const capturerMessage = {
 				source: primarySource.thumbnail.toDataURL(),
-				// type: 'fullscreen',
+				scaleFactor,
 				type: 'region',
 			}
-			this.instance?.webContents.send('CAPTURE_TRIGGER', capturerMessage)
+
+			this.instance?.webContents?.send('CAPTURE_TRIGGER', capturerMessage)
 			this.instance?.show()
+		} catch (error) {
+			console.error('Error in captureFn:', error)
+			// Handle the error appropriately, maybe show a message to the user
 		}
 	}
 
