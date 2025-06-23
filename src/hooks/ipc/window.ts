@@ -1,5 +1,6 @@
 import { T_SCREEN_SIZE_TYPE } from 'electron/ipc/screen'
 import { useIpc } from '.'
+import { TRouterPage } from 'electron/router/core'
 
 const ipc = useIpc()
 
@@ -28,4 +29,12 @@ export function listenScreen() {
 
 export function sendHideWindowEvent() {
 	ipc.send('screen_close_event')
+}
+
+export function sendRouterClose(router: TRouterPage) {
+	ipc.send('ROUTER_CLOSE', router)
+}
+
+export function sendCaptureSave(source: string) {
+	ipc.send('CAPTURER_SAVE', source)
 }

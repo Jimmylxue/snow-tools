@@ -1,0 +1,461 @@
+import { useEffect, useState, useRef, useCallback } from 'react'
+import Observable from '@/utils/observable'
+import { sendCaptureSave, sendRouterClose } from '@/hooks/ipc/window'
+import { ToolBar } from './components/ToolBar'
+import { PixelColor } from './components/PixelColor'
+import { Position, SelectionRect, TAbsolutePosition, Tool } from './type'
+import { SelectionBorder } from './components/SelectionBorder'
+
+export type TCapturerMessage = {
+	source: string
+	type: 'fullscreen' | 'region'
+}
+
+const capturerObserve = new Observable<TCapturerMessage>()
+
+window.ipcRenderer?.on('CAPTURE_TRIGGER', (_, content) => {
+	capturerObserve.notify(content)
+})
+
+export function Capturer() {
+	const [source, setSource] = useState<TCapturerMessage>()
+	const [isSelecting, setIsSelecting] = useState(false)
+	const [selection, setSelection] = useState<SelectionRect | null>(null)
+	const [pixelColor, setPixelColor] = useState<string>('')
+	const [zoomArea, setZoomArea] = useState<string>('')
+	const [showTools, setShowTools] = useState(false)
+	const [activeTool, setActiveTool] = useState<Tool>('select')
+	const [drawing, setDrawing] = useState(false)
+	const [drawings, setDrawings] = useState<
+		Array<{ path: Position[]; color: string; width: number }>
+	>([])
+	const [backgroundImage, setBackgroundImage] =
+		useState<HTMLImageElement | null>(null)
+	const [currentDrawing, setCurrentDrawing] = useState<{
+		path: Position[]
+		color: string
+		width: number
+	} | null>(null)
+	const [drawColor, setDrawColor] = useState('#ff0000')
+	const [drawWidth, setDrawWidth] = useState(3)
+
+	const visibleCanvasRef = useRef<HTMLCanvasElement>(null)
+	const [infoBoxPosition, setInfoBoxPosition] = useState<TAbsolutePosition>({
+		left: 0,
+		top: 0,
+	})
+
+	const containerRef = useRef<HTMLDivElement>(null)
+	const containerRect = containerRef?.current?.getBoundingClientRect()
+
+	// 处理ESC键关闭
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				if (showTools) {
+					setSelection(null)
+					setDrawings([])
+					setShowTools(false)
+					setActiveTool('select')
+				} else if (selection) {
+					setSelection(null)
+				} else {
+					setSource(undefined)
+					setDrawings([])
+					setCurrentDrawing(null)
+					sendRouterClose('capturer')
+				}
+			}
+		}
+		window.addEventListener('keydown', handleKeyDown)
+		return () => window.removeEventListener('keydown', handleKeyDown)
+	}, [selection, showTools])
+
+	// 处理截屏通知
+	useEffect(() => {
+		return capturerObserve.subscribe(content => {
+			setSource(content)
+		})
+	}, [])
+
+	// 开始区域选择
+	const startRegionSelection = useCallback(() => {
+		setIsSelecting(true)
+		setSelection(null)
+		setShowTools(false)
+		setDrawings([])
+	}, [])
+
+	useEffect(() => {
+		if (!source?.source || !visibleCanvasRef.current) return
+
+		const img = new Image()
+		img.onload = () => {
+			setBackgroundImage(img)
+			const visibleCanvas = visibleCanvasRef.current!
+			visibleCanvas.width = img.naturalWidth
+			visibleCanvas.height = img.naturalHeight
+			visibleCanvas.style.width = `${img.naturalWidth / 2}px`
+			visibleCanvas.style.height = `${img.naturalHeight / 2}px`
+
+			const visibleCtx = visibleCanvas.getContext('2d')!
+			visibleCtx.drawImage(img, 0, 0, visibleCanvas.width, visibleCanvas.height)
+
+			startRegionSelection()
+		}
+		img.src = source.source
+	}, [source, startRegionSelection])
+
+	const getScaledPosition = useCallback((e: React.MouseEvent) => {
+		if (!visibleCanvasRef.current) return { x: 0, y: 0 }
+
+		const canvas = visibleCanvasRef.current
+		const rect = canvas.getBoundingClientRect()
+		const scaleX = canvas.width / rect.width
+		const scaleY = canvas.height / rect.height
+
+		return {
+			x: (e.clientX - rect.left) * scaleX,
+			y: (e.clientY - rect.top) * scaleY,
+		}
+	}, [])
+
+	const updateMouseInfo = useCallback(
+		(e: React.MouseEvent, canvasX: number, canvasY: number) => {
+			if (!containerRef.current) return
+
+			const offset = 15
+			setInfoBoxPosition({
+				left: e.clientX + offset,
+				top: e.clientY + offset,
+			})
+
+			if (visibleCanvasRef.current) {
+				const ctx = visibleCanvasRef.current.getContext('2d')
+				if (ctx) {
+					const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data
+					setPixelColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`)
+					createZoomArea(canvasX, canvasY, ctx)
+				}
+			}
+		},
+		[]
+	)
+
+	const handleMouseDown = useCallback(
+		(e: React.MouseEvent) => {
+			if (!isSelecting) return
+
+			const { x, y } = getScaledPosition(e)
+
+			if (activeTool === 'select') {
+				if (showTools) return
+				setSelection({
+					start: { x, y },
+					end: { x, y },
+				})
+			} else if (activeTool === 'draw') {
+				setDrawing(true)
+				setCurrentDrawing({
+					path: [{ x, y }],
+					color: drawColor,
+					width: drawWidth,
+				})
+			}
+		},
+		[
+			isSelecting,
+			activeTool,
+			showTools,
+			getScaledPosition,
+			drawColor,
+			drawWidth,
+		]
+	)
+
+	const handleMouseMove = useCallback(
+		(e: React.MouseEvent) => {
+			if (!visibleCanvasRef.current) return
+
+			const { x, y } = getScaledPosition(e)
+			updateMouseInfo(e, x, y)
+
+			if (selection && activeTool === 'select' && !showTools) {
+				setSelection(prev => ({ ...prev!, end: { x, y } }))
+			} else if (drawing && currentDrawing && activeTool === 'draw') {
+				setCurrentDrawing(prev => ({
+					...prev!,
+					path: [...prev!.path, { x, y }],
+				}))
+			}
+		},
+		[
+			selection,
+			activeTool,
+			drawing,
+			currentDrawing,
+			updateMouseInfo,
+			showTools,
+			getScaledPosition,
+		]
+	)
+
+	const handleMouseUp = useCallback(() => {
+		if (isSelecting && selection && activeTool === 'select') {
+			const { start, end } = selection
+			const width = Math.abs(end.x - start.x)
+			const height = Math.abs(end.y - start.y)
+
+			if (width > 10 && height > 10) {
+				setShowTools(true)
+				setActiveTool('draw')
+			} else {
+				setSelection(null)
+			}
+		}
+
+		if (drawing && currentDrawing && activeTool === 'draw') {
+			setDrawings(prev => [...prev, currentDrawing])
+			setCurrentDrawing(null)
+		}
+
+		setDrawing(false)
+	}, [isSelecting, selection, activeTool, drawing, currentDrawing])
+
+	const createZoomArea = useCallback(
+		(x: number, y: number, ctx: CanvasRenderingContext2D) => {
+			const zoomSize = 100
+			const zoomFactor = 5
+			const zoomX = Math.max(0, x - zoomSize / (2 * zoomFactor))
+			const zoomY = Math.max(0, y - zoomSize / (2 * zoomFactor))
+
+			ctx.getImageData(
+				zoomX,
+				zoomY,
+				zoomSize / zoomFactor,
+				zoomSize / zoomFactor
+			)
+
+			const zoomCanvas = document.createElement('canvas')
+			zoomCanvas.width = zoomSize
+			zoomCanvas.height = zoomSize
+			const zoomCtx = zoomCanvas.getContext('2d')!
+
+			zoomCtx.imageSmoothingEnabled = false
+			zoomCtx.drawImage(
+				ctx.canvas,
+				zoomX,
+				zoomY,
+				zoomSize / zoomFactor,
+				zoomSize / zoomFactor,
+				0,
+				0,
+				zoomSize,
+				zoomSize
+			)
+
+			zoomCtx.strokeStyle = 'red'
+			zoomCtx.lineWidth = 1
+			zoomCtx.beginPath()
+			zoomCtx.moveTo(zoomSize / 2, 0)
+			zoomCtx.lineTo(zoomSize / 2, zoomSize)
+			zoomCtx.moveTo(0, zoomSize / 2)
+			zoomCtx.lineTo(zoomSize, zoomSize / 2)
+			zoomCtx.stroke()
+
+			setZoomArea(zoomCanvas.toDataURL())
+		},
+		[]
+	)
+
+	const completeSelection = useCallback(() => {
+		if (!selection || !visibleCanvasRef.current) return
+
+		const canvas = visibleCanvasRef.current
+		const outputCanvas = document.createElement('canvas')
+		const ctx = outputCanvas.getContext('2d', { willReadFrequently: true })!
+		ctx.imageSmoothingEnabled = false
+
+		const { start, end } = selection
+		const x = Math.round(Math.min(start.x, end.x))
+		const y = Math.round(Math.min(start.y, end.y))
+		const width = Math.round(Math.abs(end.x - start.x))
+		const height = Math.round(Math.abs(end.y - start.y))
+
+		outputCanvas.width = width
+		outputCanvas.height = height
+
+		ctx.drawImage(canvas, x, y, width, height, 0, 0, width, height)
+
+		const imageDataUrl = outputCanvas.toDataURL('image/png', 1.0)
+		sendCaptureSave(imageDataUrl)
+		setSource(undefined)
+	}, [selection])
+
+	const saveScreenshot = useCallback(() => {
+		if (!selection) return
+		completeSelection()
+		sendRouterClose('capturer')
+	}, [selection, completeSelection])
+
+	const cancelScreenshot = useCallback(() => {
+		setSelection(null)
+		setShowTools(false)
+		startRegionSelection()
+	}, [startRegionSelection])
+
+	const drawCanvas = useCallback(() => {
+		if (!visibleCanvasRef.current || !source || !backgroundImage) return
+
+		const canvas = visibleCanvasRef.current
+		const ctx = canvas.getContext('2d')!
+		ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+		// 1. 首先绘制原始图像
+		ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
+
+		// 2. 如果有选区，处理变暗效果
+		if (selection) {
+			ctx.save()
+
+			const { start, end } = selection
+			const x = Math.min(start.x, end.x)
+			const y = Math.min(start.y, end.y)
+			const width = Math.abs(end.x - start.x)
+			const height = Math.abs(end.y - start.y)
+
+			// 3. 创建变暗效果（选区外的区域）
+			// 3.1 绘制整个画布变暗
+			ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+			ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+			// 3.2 使用合成模式恢复选区内的亮度
+			ctx.globalCompositeOperation = 'destination-out'
+			ctx.fillRect(x, y, width, height)
+
+			// 4. 恢复合成模式并绘制选区边框
+			ctx.globalCompositeOperation = 'source-over'
+			ctx.strokeStyle = 'red'
+			ctx.lineWidth = 2
+			ctx.setLineDash([5, 5])
+			ctx.strokeRect(x, y, width, height)
+			ctx.setLineDash([])
+
+			ctx.restore()
+
+			// 5. 重新绘制选区内的原始图像（保持亮度）
+			ctx.save()
+			ctx.beginPath()
+			ctx.rect(x, y, width, height)
+			ctx.closePath()
+			ctx.clip()
+			ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
+			ctx.restore()
+		}
+
+		// 绘制所有已保存的绘画（保持不变）
+		drawings.forEach(drawing => {
+			if (drawing.path.length < 2) return
+			ctx.strokeStyle = drawing.color
+			ctx.lineWidth = drawing.width
+			ctx.lineJoin = 'round'
+			ctx.lineCap = 'round'
+			ctx.beginPath()
+			ctx.moveTo(drawing.path[0].x, drawing.path[0].y)
+			for (let i = 1; i < drawing.path.length; i++) {
+				ctx.lineTo(drawing.path[i].x, drawing.path[i].y)
+			}
+			ctx.stroke()
+		})
+
+		// 绘制当前正在进行的绘画（保持不变）
+		if (currentDrawing && currentDrawing.path.length >= 2) {
+			ctx.strokeStyle = currentDrawing.color
+			ctx.lineWidth = currentDrawing.width
+			ctx.lineJoin = 'round'
+			ctx.lineCap = 'round'
+			ctx.beginPath()
+			ctx.moveTo(currentDrawing.path[0].x, currentDrawing.path[0].y)
+			for (let i = 1; i < currentDrawing.path.length; i++) {
+				ctx.lineTo(currentDrawing.path[i].x, currentDrawing.path[i].y)
+			}
+			ctx.stroke()
+		}
+	}, [source, selection, drawings, currentDrawing, backgroundImage])
+
+	useEffect(() => {
+		drawCanvas()
+	}, [drawCanvas])
+
+	return (
+		<div
+			ref={containerRef}
+			className="relative w-screen h-screen overflow-hidden bg-gray-900"
+			onMouseMove={handleMouseMove}
+			onMouseUp={handleMouseUp}
+		>
+			{source && (
+				<div className="relative">
+					<canvas
+						ref={visibleCanvasRef}
+						className="block"
+						onMouseDown={handleMouseDown}
+						draggable={false}
+						style={{
+							cursor: !showTools ? 'crosshair' : 'default',
+						}}
+					/>
+					{isSelecting && selection && (
+						<SelectionBorder
+							selection={selection}
+							showTools={showTools}
+							canvas={visibleCanvasRef?.current}
+						/>
+					)}
+				</div>
+			)}
+
+			<PixelColor
+				infoBoxPosition={infoBoxPosition}
+				pixelColor={pixelColor}
+				zoomArea={zoomArea}
+			/>
+
+			<ToolBar
+				containerRect={containerRect}
+				selection={selection}
+				activeState={activeTool}
+				drawColor={drawColor}
+				drawWidth={drawWidth}
+				onColorChange={setDrawColor}
+				onWidthChange={setDrawWidth}
+				onTriggerEvent={status => {
+					switch (status) {
+						case 'RESET':
+							setActiveTool('select')
+							setShowTools(false)
+							break
+						case 'SELECT':
+							setActiveTool('select')
+							break
+						case 'DRAW':
+							setActiveTool('draw')
+							break
+						case 'CLEAR_DRAW':
+							setDrawings([])
+							setCurrentDrawing(null)
+							break
+						case 'CANCEL':
+							cancelScreenshot()
+							setActiveTool('select')
+							break
+						case 'SAVE':
+							saveScreenshot()
+							break
+					}
+				}}
+				show={!!(showTools && selection)}
+			/>
+		</div>
+	)
+}

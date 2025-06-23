@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 const placeholderText = 'Enter the translation content'
 
 export const Child = observer((_: TBaseCommandProps) => {
-	const { from, to, updateFrom, updateTo } = useTranslateConfig()
+	const { from, to, updateFrom, updateTo, replace } = useTranslateConfig()
 
 	const { mutateAsync, isPending, data, reset } = useTranslateV2({
 		onSettled: () => {
@@ -83,7 +83,12 @@ export const Child = observer((_: TBaseCommandProps) => {
 					</SelectContent>
 				</Select>
 
-				<div className="mx-2 text-[#7f8fa4]">
+				<div
+					className="mx-2 text-[#7f8fa4] cursor-pointer"
+					onClick={() => {
+						replace?.()
+					}}
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						className="h-4 w-4"

@@ -20,7 +20,7 @@ const FANYI_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 
 const SYSTEM_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 	width: 600,
-	height: 300,
+	height: 400,
 	topProportion: 1.3,
 }
 

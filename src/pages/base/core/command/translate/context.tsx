@@ -7,6 +7,7 @@ type TTranslateContext = {
 	to: TShortEn
 	updateFrom?: (lang: TShortEn) => void
 	updateTo?: (lang: TShortEn) => void
+	replace?: () => void
 }
 
 const TranslateContext = createContext<TTranslateContext>({
@@ -35,12 +36,23 @@ export const TranslateContextProvider = ({
 		setTranslateState({ ...translateState!, to: lang })
 	}
 
+	const replace = () => {
+		if (translateState && translateState.to) {
+			setTranslateState({
+				...translateState,
+				from: translateState.to,
+				to: translateState.from,
+			})
+		}
+	}
+
 	return (
 		<TranslateContext.Provider
 			value={{
 				...translateState!,
 				updateFrom,
 				updateTo,
+				replace,
 			}}
 		>
 			{children}
