@@ -14,3 +14,9 @@ export type TAbsolutePosition = {
 	left: number
 	top: number
 }
+
+export type TCurrentMouseInfo = {
+	e: React.MouseEvent
+	x: number
+	y: number
+}

@@ -70,14 +70,12 @@ class MainWindow implements TWindows {
 		this.updateHotKey()
 
 		ipcMain.on('EDITING_OPEN_HOT_KEY_COMPLETE', () => {
-			console.log('here')
-			this.isEditingHotKey = true
+			this.isEditingHotKey = false
 			this.updateHotKey()
 		})
 
 		ipcMain.on('EDITING_OPEN_HOT_KEY', () => {
-			this.isEditingHotKey = false
-			// this.updateHotKey()
+			this.isEditingHotKey = true
 			globalShortcut.unregister(this.currentHotKey)
 			this.currentHotKey = ''
 		})

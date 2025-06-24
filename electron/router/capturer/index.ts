@@ -71,8 +71,6 @@ class CaptureWindow implements TWindows {
 
 				// 复制图片到剪贴板
 				clipboard.writeImage(image)
-
-				console.log('图片已复制到剪贴板')
 			} catch (error) {
 				console.error('复制图片失败:', error)
 			}
@@ -118,8 +116,8 @@ class CaptureWindow implements TWindows {
 	}
 
 	close() {
-		// this.instance?.setOpacity(0)
 		this.instance?.hide()
+		this.instance?.webContents.send('CAPTURE_CLOSE')
 	}
 
 	captureFn = async () => {

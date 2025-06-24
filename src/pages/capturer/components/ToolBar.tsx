@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { SelectionRect, TAbsolutePosition } from '../type'
-import { TCapturerMessage } from '..'
+import { TCapturerMessage } from '../oberver'
 
 type TProps = {
 	activeState: string

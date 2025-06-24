@@ -1,35 +1,26 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import Observable from '@/utils/observable'
 import { sendCaptureSave, sendRouterClose } from '@/hooks/ipc/window'
 import { ToolBar } from './components/ToolBar'
 import { PixelColor } from './components/PixelColor'
-import { Position, SelectionRect, TAbsolutePosition, Tool } from './type'
+import { Position, SelectionRect, TCurrentMouseInfo, Tool } from './type'
 import { SelectionBorder } from './components/SelectionBorder'
-
-export type TCapturerMessage = {
-	source: string
-	type: 'fullscreen' | 'region'
-	scaleFactor: number
-}
-
-const capturerObserve = new Observable<TCapturerMessage>()
-
-window.ipcRenderer?.on('CAPTURE_TRIGGER', (_, content) => {
-	capturerObserve.notify(content)
-})
+import {
+	capturerCloseObserve,
+	capturerObserve,
+	TCapturerMessage,
+} from './oberver'
 
 export function Capturer() {
 	const [source, setSource] = useState<TCapturerMessage>()
 	const [isSelecting, setIsSelecting] = useState(false)
 	const [selection, setSelection] = useState<SelectionRect | null>(null)
-	const [pixelColor, setPixelColor] = useState<string>('')
-	const [zoomArea, setZoomArea] = useState<string>('')
 	const [showTools, setShowTools] = useState(false)
 	const [activeTool, setActiveTool] = useState<Tool>('select')
 	const [drawing, setDrawing] = useState(false)
 	const [drawings, setDrawings] = useState<
 		Array<{ path: Position[]; color: string; width: number }>
 	>([])
+	const [currentMouseInfo, setCurrentMouseInfo] = useState<TCurrentMouseInfo>()
 	const [backgroundImage, setBackgroundImage] =
 		useState<HTMLImageElement | null>(null)
 	const [currentDrawing, setCurrentDrawing] = useState<{
@@ -41,10 +32,6 @@ export function Capturer() {
 	const [drawWidth, setDrawWidth] = useState(3)
 
 	const visibleCanvasRef = useRef<HTMLCanvasElement>(null)
-	const [infoBoxPosition, setInfoBoxPosition] = useState<TAbsolutePosition>({
-		left: 0,
-		top: 0,
-	})
 
 	const containerRef = useRef<HTMLDivElement>(null)
 	const containerRect = containerRef?.current?.getBoundingClientRect()
@@ -61,6 +48,7 @@ export function Capturer() {
 				} else if (selection) {
 					setSelection(null)
 				} else {
+					setActiveTool('select')
 					setSource(undefined)
 					setDrawings([])
 					setCurrentDrawing(null)
@@ -76,6 +64,15 @@ export function Capturer() {
 	useEffect(() => {
 		return capturerObserve.subscribe(content => {
 			setSource(content)
+		})
+	}, [])
+
+	useEffect(() => {
+		return capturerCloseObserve.subscribe(() => {
+			setActiveTool('select')
+			setSource(undefined)
+			setDrawings([])
+			setCurrentDrawing(null)
 		})
 	}, [])
 
@@ -121,28 +118,6 @@ export function Capturer() {
 		}
 	}, [])
 
-	const updateMouseInfo = useCallback(
-		(e: React.MouseEvent, canvasX: number, canvasY: number) => {
-			if (!containerRef.current) return
-
-			const offset = 15
-			setInfoBoxPosition({
-				left: e.clientX + offset,
-				top: e.clientY + offset,
-			})
-
-			if (visibleCanvasRef.current) {
-				const ctx = visibleCanvasRef.current.getContext('2d')
-				if (ctx) {
-					const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data
-					setPixelColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`)
-					createZoomArea(canvasX, canvasY, ctx)
-				}
-			}
-		},
-		[]
-	)
-
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
 			if (!isSelecting) return
@@ -179,7 +154,7 @@ export function Capturer() {
 			if (!visibleCanvasRef.current) return
 
 			const { x, y } = getScaledPosition(e)
-			updateMouseInfo(e, x, y)
+			setCurrentMouseInfo({ e, x, y })
 
 			if (selection && activeTool === 'select' && !showTools) {
 				setSelection(prev => ({ ...prev!, end: { x, y } }))
@@ -195,7 +170,6 @@ export function Capturer() {
 			activeTool,
 			drawing,
 			currentDrawing,
-			updateMouseInfo,
 			showTools,
 			getScaledPosition,
 		]
@@ -222,52 +196,6 @@ export function Capturer() {
 
 		setDrawing(false)
 	}, [isSelecting, selection, activeTool, drawing, currentDrawing])
-
-	const createZoomArea = useCallback(
-		(x: number, y: number, ctx: CanvasRenderingContext2D) => {
-			const zoomSize = 100
-			const zoomFactor = 5
-			const zoomX = Math.max(0, x - zoomSize / (2 * zoomFactor))
-			const zoomY = Math.max(0, y - zoomSize / (2 * zoomFactor))
-
-			ctx.getImageData(
-				zoomX,
-				zoomY,
-				zoomSize / zoomFactor,
-				zoomSize / zoomFactor
-			)
-
-			const zoomCanvas = document.createElement('canvas')
-			zoomCanvas.width = zoomSize
-			zoomCanvas.height = zoomSize
-			const zoomCtx = zoomCanvas.getContext('2d')!
-
-			zoomCtx.imageSmoothingEnabled = false
-			zoomCtx.drawImage(
-				ctx.canvas,
-				zoomX,
-				zoomY,
-				zoomSize / zoomFactor,
-				zoomSize / zoomFactor,
-				0,
-				0,
-				zoomSize,
-				zoomSize
-			)
-
-			zoomCtx.strokeStyle = 'red'
-			zoomCtx.lineWidth = 1
-			zoomCtx.beginPath()
-			zoomCtx.moveTo(zoomSize / 2, 0)
-			zoomCtx.lineTo(zoomSize / 2, zoomSize)
-			zoomCtx.moveTo(0, zoomSize / 2)
-			zoomCtx.lineTo(zoomSize, zoomSize / 2)
-			zoomCtx.stroke()
-
-			setZoomArea(zoomCanvas.toDataURL())
-		},
-		[]
-	)
 
 	const completeSelection = useCallback(() => {
 		if (!selection || !visibleCanvasRef.current) return
@@ -417,9 +345,8 @@ export function Capturer() {
 			)}
 
 			<PixelColor
-				infoBoxPosition={infoBoxPosition}
-				pixelColor={pixelColor}
-				zoomArea={zoomArea}
+				currentMouseInfo={currentMouseInfo}
+				visibleCanvasRef={visibleCanvasRef.current}
 			/>
 
 			<ToolBar
