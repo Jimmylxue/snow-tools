@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button'
 import { getKeyName } from './utils'
 import { shortCutKeyMap } from './const'
 import { TShortCutUUKey } from './type'
-import { useIpc } from '@/hooks/ipc'
+import { getIpc } from '@/hooks/ipc'
 
 type TProps = {
 	label: string
 	shortCutUUKey: TShortCutUUKey
 }
 
-const ipc = useIpc()
+const ipc = getIpc()
 
 export function StartShortCut({ label, shortCutUUKey }: TProps) {
 	const [shortcut, setShortcut] = useState('')

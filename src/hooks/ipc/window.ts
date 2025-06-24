@@ -1,8 +1,9 @@
 import { T_SCREEN_SIZE_TYPE } from 'electron/ipc/screen'
-import { useIpc } from '.'
+import { getIpc } from '.'
 import { TRouterPage } from 'electron/router/core'
+import { TCaptureSaveParams } from 'electron/router/capturer/type'
 
-const ipc = useIpc()
+const ipc = getIpc()
 
 export function sendWindowSizeEvent(type: T_SCREEN_SIZE_TYPE) {
 	ipc.send('screen_size_event', type)
@@ -35,6 +36,10 @@ export function sendRouterClose(router: TRouterPage) {
 	ipc.send('ROUTER_CLOSE', router)
 }
 
-export function sendCaptureSave(source: string) {
+export function sendCaptureSave(source: TCaptureSaveParams) {
 	ipc.send('CAPTURER_SAVE', source)
+}
+
+export function sendCaptureHover(source: TCaptureSaveParams) {
+	ipc.send('CAPTURER_HOVER', source)
 }

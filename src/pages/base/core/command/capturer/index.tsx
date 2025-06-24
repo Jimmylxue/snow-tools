@@ -1,11 +1,11 @@
 import { Scissors } from 'lucide-react'
 import { TBaseCommandProps } from '../type'
 import { useEffect } from 'react'
-import { useIpc } from '@/hooks/ipc'
+import { getIpc } from '@/hooks/ipc'
+
+const ipc = getIpc()
 
 const CapturerContent = ({ destructCommand }: TBaseCommandProps) => {
-	const ipc = useIpc()
-
 	useEffect(() => {
 		destructCommand()
 		ipc.send('COMMAND_TRIGGER_CAPTURER')

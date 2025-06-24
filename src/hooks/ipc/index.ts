@@ -1,3 +1,3 @@
-export function useIpc() {
+export function getIpc() {
 	return window.ipcRenderer
 }

@@ -1,5 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { sendCaptureSave, sendRouterClose } from '@/hooks/ipc/window'
+import {
+	sendCaptureHover,
+	sendCaptureSave,
+	sendRouterClose,
+} from '@/hooks/ipc/window'
 import { ToolBar } from './components/ToolBar'
 import { PixelColor } from './components/PixelColor'
 import { Position, SelectionRect, TCurrentMouseInfo, Tool } from './type'
@@ -9,6 +13,7 @@ import {
 	capturerObserve,
 	TCapturerMessage,
 } from './oberver'
+import { v4 as uuidv4 } from 'uuid'
 
 export function Capturer() {
 	const [source, setSource] = useState<TCapturerMessage>()
@@ -35,30 +40,6 @@ export function Capturer() {
 
 	const containerRef = useRef<HTMLDivElement>(null)
 	const containerRect = containerRef?.current?.getBoundingClientRect()
-
-	// 处理ESC键关闭
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') {
-				if (showTools) {
-					setSelection(null)
-					setDrawings([])
-					setShowTools(false)
-					setActiveTool('select')
-				} else if (selection) {
-					setSelection(null)
-				} else {
-					setActiveTool('select')
-					setSource(undefined)
-					setDrawings([])
-					setCurrentDrawing(null)
-					sendRouterClose('capturer')
-				}
-			}
-		}
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [selection, showTools])
 
 	// 处理截屏通知
 	useEffect(() => {
@@ -197,33 +178,61 @@ export function Capturer() {
 		setDrawing(false)
 	}, [isSelecting, selection, activeTool, drawing, currentDrawing])
 
-	const completeSelection = useCallback(() => {
-		if (!selection || !visibleCanvasRef.current) return
+	const completeSelection = useCallback(
+		(isHoverCapture: boolean = false) => {
+			if (!selection || !visibleCanvasRef.current) return
 
-		const canvas = visibleCanvasRef.current
-		const outputCanvas = document.createElement('canvas')
-		const ctx = outputCanvas.getContext('2d', { willReadFrequently: true })!
-		ctx.imageSmoothingEnabled = false
+			const canvas = visibleCanvasRef.current
+			const outputCanvas = document.createElement('canvas')
+			const ctx = outputCanvas.getContext('2d', { willReadFrequently: true })!
+			ctx.imageSmoothingEnabled = false
 
-		const { start, end } = selection
-		const x = Math.round(Math.min(start.x, end.x))
-		const y = Math.round(Math.min(start.y, end.y))
-		const width = Math.round(Math.abs(end.x - start.x))
-		const height = Math.round(Math.abs(end.y - start.y))
+			const { start, end } = selection
+			const x = Math.round(Math.min(start.x, end.x))
+			const y = Math.round(Math.min(start.y, end.y))
+			const width = Math.round(Math.abs(end.x - start.x))
+			const height = Math.round(Math.abs(end.y - start.y))
 
-		outputCanvas.width = width
-		outputCanvas.height = height
+			outputCanvas.width = width
+			outputCanvas.height = height
 
-		ctx.drawImage(canvas, x, y, width, height, 0, 0, width, height)
+			ctx.drawImage(canvas, x, y, width, height, 0, 0, width, height)
 
-		const imageDataUrl = outputCanvas.toDataURL('image/png', 1.0)
-		sendCaptureSave(imageDataUrl)
-		setSource(undefined)
-	}, [selection])
+			const imageDataUrl = outputCanvas.toDataURL('image/png', 1.0)
+
+			const params = {
+				id: uuidv4(),
+				source: imageDataUrl,
+				size: {
+					width: width / source!.scaleFactor,
+					height: height / source!.scaleFactor,
+				},
+				position: {
+					x: x / source!.scaleFactor,
+					y: y / source!.scaleFactor,
+				},
+			}
+
+			if (isHoverCapture) {
+				sendCaptureHover(params)
+			} else {
+				sendCaptureSave(params)
+			}
+
+			setSource(undefined)
+		},
+		[selection]
+	)
 
 	const saveScreenshot = useCallback(() => {
 		if (!selection) return
 		completeSelection()
+		sendRouterClose('capturer')
+	}, [selection, completeSelection])
+
+	const hoverScreenshot = useCallback(() => {
+		if (!selection) return
+		completeSelection(true)
 		sendRouterClose('capturer')
 	}, [selection, completeSelection])
 
@@ -316,6 +325,34 @@ export function Capturer() {
 		drawCanvas()
 	}, [drawCanvas])
 
+	// 处理ESC键关闭
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') {
+				if (showTools) {
+					setSelection(null)
+					setDrawings([])
+					setShowTools(false)
+					setActiveTool('select')
+				} else if (selection) {
+					setSelection(null)
+				} else {
+					setActiveTool('select')
+					setSource(undefined)
+					setDrawings([])
+					setCurrentDrawing(null)
+					sendRouterClose('capturer')
+				}
+			} else if (event.key === 'Enter') {
+				if (selection) {
+					saveScreenshot()
+				}
+			}
+		}
+		window.addEventListener('keydown', handleKeyDown)
+		return () => window.removeEventListener('keydown', handleKeyDown)
+	}, [selection, showTools, saveScreenshot])
+
 	return (
 		<div
 			ref={containerRef}
@@ -381,6 +418,8 @@ export function Capturer() {
 						case 'SAVE':
 							saveScreenshot()
 							break
+						case 'HOVER':
+							hoverScreenshot()
 					}
 				}}
 				show={!!(showTools && selection)}

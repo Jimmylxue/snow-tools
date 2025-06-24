@@ -4,8 +4,6 @@ import {
 	desktopCapturer,
 	screen,
 	ipcMain,
-	nativeImage,
-	clipboard,
 } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,6 +11,9 @@ import { TWindows } from '../type'
 import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
 import { getLocalStorageHotKey } from './hotkey'
 import { navigate } from '../core'
+import { TCaptureSaveParams } from './type'
+import { hoverWindows } from './hover'
+import { copyImageToClipboard } from '../../utils/storage'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -59,21 +60,12 @@ class CaptureWindow implements TWindows {
 
 		this.updateHotKey()
 
-		ipcMain.on('CAPTURER_SAVE', (_, base64Data: string) => {
-			try {
-				// 移除 Base64 前缀（如果有）
-				const base64 = base64Data.replace(/^data:image\/\w+;base64,/, '')
+		ipcMain.on('CAPTURER_SAVE', (_, source: TCaptureSaveParams) => {
+			copyImageToClipboard(source.source)
+		})
 
-				// 创建 NativeImage 实例
-				const image = nativeImage.createFromBuffer(
-					Buffer.from(base64, 'base64')
-				)
-
-				// 复制图片到剪贴板
-				clipboard.writeImage(image)
-			} catch (error) {
-				console.error('复制图片失败:', error)
-			}
+		ipcMain.on('CAPTURER_HOVER', (_, source: TCaptureSaveParams) => {
+			hoverWindows.generate(source)
 		})
 
 		ipcMain.on('EDITING_CAPTURER_HOT_KET_COMPLETE', () => {
@@ -83,7 +75,6 @@ class CaptureWindow implements TWindows {
 
 		ipcMain.on('EDITING_CAPTURER_HOT_KEY', () => {
 			this.isEditingHotKey = true
-			// this.updateHotKey()
 			globalShortcut.unregister(this.currentHotKey)
 			this.currentHotKey = ''
 		})

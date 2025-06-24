@@ -5,7 +5,14 @@ import { TCapturerMessage } from '../oberver'
 type TProps = {
 	activeState: string
 	onTriggerEvent: (
-		event: 'RESET' | 'SELECT' | 'DRAW' | 'CLEAR_DRAW' | 'CANCEL' | 'SAVE'
+		event:
+			| 'RESET'
+			| 'SELECT'
+			| 'DRAW'
+			| 'CLEAR_DRAW'
+			| 'CANCEL'
+			| 'SAVE'
+			| 'HOVER'
 	) => void
 	show: boolean
 	selection: SelectionRect | null
@@ -242,6 +249,12 @@ export function ToolBar({
 					onClick={() => onTriggerEvent('CANCEL')}
 				>
 					取消
+				</button>
+				<button
+					className="px-4 h-9 rounded-md text-sm font-medium bg-[#FFA500] text-white hover:bg-[#EE9A00] transition-all"
+					onClick={() => onTriggerEvent('HOVER')}
+				>
+					悬停
 				</button>
 				<button
 					className="px-4 h-9 rounded-md text-sm font-medium bg-[#27C93F] text-white hover:bg-[#1DAD32] transition-all"

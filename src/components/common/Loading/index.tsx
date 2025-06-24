@@ -108,10 +108,9 @@ export function Loading() {
 				<div className="road"></div>
 
 				<svg
-					// @ts-ignore
-					xml:space="preserve"
+					xmlSpace="preserve"
 					viewBox="0 0 453.459 453.459"
-					xmlns:xlink="http://www.w3.org/1999/xlink"
+					xmlnsXlink="http://www.w3.org/1999/xlink"
 					xmlns="http://www.w3.org/2000/svg"
 					id="Capa_1"
 					version="1.1"
