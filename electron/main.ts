@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { initRouter } from './router'
 import { appTray } from './config/tray'
+import { navigate } from './router/core'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -17,6 +18,21 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 	: RENDERER_DIST
 
 export const is_mac = process.platform === 'darwin'
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+	// 如果已经有实例运行，直接退出
+	app.quit()
+	process.exit(0)
+}
+
+// 处理第二个实例启动
+app.on('second-instance', () => {
+	if (navigate.routerMap?.base) {
+		navigate.routerMap?.base.show()
+	}
+})
+
 if (is_mac) {
 	app.dock.hide() // - 1 -
 }

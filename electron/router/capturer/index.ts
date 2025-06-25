@@ -56,9 +56,13 @@ class CaptureWindow implements TWindows {
 			navigate.routerMap?.base.close()
 			this.captureFn()
 		})
+
+		ipcMain.on('CAPTURE_LOG', (_, log) => {
+			console.log('log', log)
+		})
 	}
 
-	create() {
+	create(onLoad?: () => void) {
 		this.instance = new BrowserWindow({
 			icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
 			webPreferences: {
@@ -78,6 +82,9 @@ class CaptureWindow implements TWindows {
 				`window.location.hash = '#/capturer';`
 			)
 			this.instance!.setBounds({ x: 0, y: 0 })
+
+			this.updateHotKey()
+			onLoad?.()
 		})
 
 		if (VITE_DEV_SERVER_URL) {
@@ -89,8 +96,6 @@ class CaptureWindow implements TWindows {
 		if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
 			this.instance?.webContents.openDevTools()
 		}
-
-		this.updateHotKey()
 
 		return this.instance
 	}
@@ -130,60 +135,67 @@ class CaptureWindow implements TWindows {
 
 	captureFn = async () => {
 		try {
-			if (!this.instance) {
-				this.create()
-			}
-			if (this.instance?.isVisible() || this.isEditingHotKey) {
-				/**已展示不可重复开启 */
-				return
-			}
-			const scaleFactor = screen.getPrimaryDisplay().scaleFactor
-			const mousePoint = screen.getCursorScreenPoint()
-			const currentDisplay = screen.getDisplayNearestPoint(mousePoint)
+			const todoFn = async () => {
+				if (this.instance?.isVisible() || this.isEditingHotKey) {
+					/**已展示不可重复开启 */
+					this.instance?.focus()
+					return
+				}
+				const scaleFactor = screen.getPrimaryDisplay().scaleFactor
+				const mousePoint = screen.getCursorScreenPoint()
+				const currentDisplay = screen.getDisplayNearestPoint(mousePoint)
 
-			if (!currentDisplay) {
-				throw new Error('No display found')
-			}
+				if (!currentDisplay) {
+					throw new Error('No display found')
+				}
 
-			const { width, height, x, y } = currentDisplay.bounds
+				const { width, height, x, y } = currentDisplay.bounds
 
-			// Make sure width and height are integers
-			const displayBounds = {
-				x: Math.floor(x),
-				y: Math.floor(y),
-				width: Math.floor(width),
-				height: Math.floor(height),
-			}
+				// Make sure width and height are integers
+				const displayBounds = {
+					x: Math.floor(x),
+					y: Math.floor(y),
+					width: Math.floor(width),
+					height: Math.floor(height),
+				}
 
-			this.instance?.setBounds(displayBounds)
+				this.instance?.setBounds(displayBounds)
 
-			const sources = await desktopCapturer.getSources({
-				types: ['screen'],
-				thumbnailSize: {
-					width: Math.floor(width * scaleFactor),
-					height: Math.floor(height * scaleFactor),
-				},
-			})
+				const sources = await desktopCapturer.getSources({
+					types: ['screen'],
+					thumbnailSize: {
+						width: Math.floor(width * scaleFactor),
+						height: Math.floor(height * scaleFactor),
+					},
+				})
 
-			const primarySource = sources.find(
-				source => source.display_id === currentDisplay.id.toString()
-			)
-
-			if (!primarySource || !primarySource.thumbnail) {
-				throw new Error(
-					'Screen capture failed - no source or thumbnail available'
+				const primarySource = sources.find(
+					source => source.display_id === currentDisplay.id.toString()
 				)
-			}
 
-			const capturerMessage = {
-				source: primarySource.thumbnail.toDataURL(),
-				scaleFactor,
-				type: 'region',
-			}
+				if (!primarySource || !primarySource.thumbnail) {
+					throw new Error(
+						'Screen capture failed - no source or thumbnail available'
+					)
+				}
 
-			setTimeout(() => {
+				const capturerMessage = {
+					source: primarySource.thumbnail.toDataURL(),
+					scaleFactor,
+					type: 'region',
+				}
+				console.log('SEND_CAPTURE')
 				this.instance?.webContents?.send('CAPTURE_TRIGGER', capturerMessage)
-			}, 50)
+			}
+			if (!this.instance) {
+				/**
+				 * 需要在 create 加载成功之后的回调中 处理
+				 */
+				console.log('createNew instance')
+				this.create(todoFn)
+			} else {
+				todoFn()
+			}
 		} catch (error) {
 			console.error('Error in captureFn:', error)
 			// Handle the error appropriately, maybe show a message to the user

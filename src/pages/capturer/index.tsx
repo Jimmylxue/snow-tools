@@ -14,6 +14,9 @@ import {
 	TCapturerMessage,
 } from './oberver'
 import { v4 as uuidv4 } from 'uuid'
+import { getIpc } from '@/hooks/ipc'
+
+const ipc = getIpc()
 
 export function Capturer() {
 	const [source, setSource] = useState<TCapturerMessage>()
@@ -44,9 +47,10 @@ export function Capturer() {
 	// 处理截屏通知
 	useEffect(() => {
 		return capturerObserve.subscribe(content => {
+			ipc.send('CAPTURE_LOG', 'USE EFFECT GET TRIGGER')
 			setSource(content)
 		})
-	}, [])
+	}, [capturerObserve])
 
 	useEffect(() => {
 		return capturerCloseObserve.subscribe(() => {
@@ -339,6 +343,7 @@ export function Capturer() {
 					setSource(undefined)
 					setDrawings([])
 					setCurrentDrawing(null)
+					ipc.send('CAPTURE_LOG', 'CAPTURE_WINDOWS_CLOSE')
 					sendRouterClose('capturer')
 				}
 			} else if (event.key === 'Enter') {

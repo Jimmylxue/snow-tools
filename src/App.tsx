@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'
 import { Base } from '@/pages/base'
 import { useClipBoardChange } from './hooks/clipboard/useClipBoardChange'
 import { Capturer } from './pages/capturer'
@@ -13,7 +13,7 @@ function App() {
 				<Route path="/capturer" element={<Capturer />} />
 				<Route path="/capturer/hover" element={<HoverCapturer />} />
 				{/* <Route path="/setting" element={<SystemSetting />} /> */}
-				<Route path="*" element={<Navigate to="/base" replace />} />
+				<Route path="*" element={<div>Not Found</div>} />
 			</Routes>
 		</Router>
 	)

@@ -37,6 +37,9 @@ class MainWindow implements TWindows {
 
 		// Test active push message to Renderer-process.
 		this.instance.webContents.on('did-finish-load', () => {
+			this.instance?.webContents.executeJavaScript(
+				`window.location.hash = '#/base';`
+			)
 			this.instance?.webContents.send(
 				'main-process-message',
 				new Date().toLocaleString()
@@ -76,7 +79,8 @@ class MainWindow implements TWindows {
 
 		ipcMain.on('EDITING_OPEN_HOT_KEY', () => {
 			this.isEditingHotKey = true
-			globalShortcut.unregister(this.currentHotKey)
+			console.log('this.currentKey', this.currentHotKey)
+			this.currentHotKey && globalShortcut.unregister(this.currentHotKey)
 			this.currentHotKey = ''
 		})
 
@@ -90,7 +94,12 @@ class MainWindow implements TWindows {
 		}
 	}
 
-	show() {}
+	show() {
+		this.instance?.setOpacity(1)
+		this.instance?.focus()
+		showWindow(this.instance!)
+		this.instance?.webContents.send('window-shown')
+	}
 
 	close() {
 		this.instance?.setOpacity(0)
@@ -113,10 +122,7 @@ class MainWindow implements TWindows {
 					this.instance?.setOpacity(0)
 					this.instance?.hide()
 				} else {
-					this.instance?.setOpacity(1)
-					this.instance?.focus()
-					showWindow(this.instance!)
-					this.instance?.webContents.send('window-shown')
+					this.show()
 				}
 			})
 

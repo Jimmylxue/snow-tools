@@ -53,7 +53,7 @@
 		extraResources: [
 			{
 				from: 'public/tray-icon-win.png',
-				to: 'resources/tray-icon-win.png',
+				to: '.',
 			},
 		],
 	},

@@ -6,6 +6,7 @@ import { getKeyName } from './utils'
 import { shortCutKeyMap } from './const'
 import { TShortCutUUKey } from './type'
 import { getIpc } from '@/hooks/ipc'
+import { toast } from 'sonner'
 
 type TProps = {
 	label: string
@@ -47,12 +48,18 @@ export function StartShortCut({ label, shortCutUUKey }: TProps) {
 
 	// 保存快捷键
 	const saveShortcut = useCallback(() => {
+		if (tempShortcut.split('+').length < 2) {
+			toast('请输入正确组合键', {
+				duration: 700,
+			})
+			cancelEditing()
+			return
+		}
 		if (tempShortcut) {
 			localStorage.setItem(keys.localstorageKey, tempShortcut)
 			setShortcut(tempShortcut)
 		}
 		stopListening()
-		// sendHotKeyEvent(keys.completed)
 		ipc.send(keys.completed)
 	}, [tempShortcut])
 
@@ -91,33 +98,23 @@ export function StartShortCut({ label, shortCutUUKey }: TProps) {
 			setTempShortcut(keys.join('+'))
 		}
 
-		const handleKeyUp = (e: KeyboardEvent) => {
-			if (listeningRef.current && tempShortcut) {
-				// 确保不是只按了修饰键
-				const isModifierOnly = [
-					'Control',
-					'Shift',
-					'Alt',
-					'Meta',
-					'Command',
-					'Win',
-				].includes(e.key)
-				if (!isModifierOnly) {
-					saveShortcut()
-				}
-			}
-		}
-
 		if (isListening) {
 			window.addEventListener('keydown', handleKeyDown)
-			window.addEventListener('keyup', handleKeyUp)
 		}
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown)
-			window.removeEventListener('keyup', handleKeyUp)
 		}
-	}, [isListening, tempShortcut, saveShortcut])
+	}, [isListening, saveShortcut])
+
+	useEffect(() => {
+		if (isListening) {
+			const isSuccessCode = tempShortcut.split('+').length === 2
+			if (isSuccessCode) {
+				saveShortcut()
+			}
+		}
+	}, [tempShortcut, isListening])
 
 	return (
 		<div className="space-y-3">
