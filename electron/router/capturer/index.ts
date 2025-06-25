@@ -86,9 +86,9 @@ class CaptureWindow implements TWindows {
 			this.instance.loadFile(path.join(RENDERER_DIST, 'index.html'))
 		}
 
-		// if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
-		this.instance?.webContents.openDevTools()
-		// }
+		if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
+			this.instance?.webContents.openDevTools()
+		}
 
 		this.updateHotKey()
 
@@ -133,7 +133,6 @@ class CaptureWindow implements TWindows {
 			if (!this.instance) {
 				this.create()
 			}
-			console.log('MMMMM', this.instance?.isVisible(), this.isEditingHotKey)
 			if (this.instance?.isVisible() || this.isEditingHotKey) {
 				/**已展示不可重复开启 */
 				return
@@ -185,8 +184,6 @@ class CaptureWindow implements TWindows {
 			setTimeout(() => {
 				this.instance?.webContents?.send('CAPTURE_TRIGGER', capturerMessage)
 			}, 50)
-			console.log('send \n', capturerMessage)
-			// this.instance?.show()
 		} catch (error) {
 			console.error('Error in captureFn:', error)
 			// Handle the error appropriately, maybe show a message to the user

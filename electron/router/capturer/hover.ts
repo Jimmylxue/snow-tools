@@ -17,13 +17,9 @@ class HoverWindows {
 
 	constructor() {
 		ipcMain.on('SHOW_HOVER_SCREEN', (_, windowId: string) => {
-			console.log(11111, windowId, this.instances.keys())
-
 			const hoverWindow = this.instances.get(windowId)
 			const instance = hoverWindow?.window
 			if (instance) {
-				console.log(2222)
-
 				const { position, size } = hoverWindow.params
 
 				// 1. 获取当前鼠标所在显示器
@@ -93,7 +89,9 @@ class HoverWindows {
 			)
 			instance.webContents.send('window-init', { params })
 
-			// instance.webContents.openDevTools()
+			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
+				instance?.webContents.openDevTools()
+			}
 		})
 
 		if (VITE_DEV_SERVER_URL) {

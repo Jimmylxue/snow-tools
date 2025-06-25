@@ -230,8 +230,8 @@ export function Capturer() {
 
 	const hoverScreenshot = useCallback(() => {
 		if (!selection) return
-		sendRouterClose('capturer')
 		completeSelection(true)
+		sendRouterClose('capturer')
 	}, [selection, completeSelection])
 
 	const cancelScreenshot = useCallback(() => {
