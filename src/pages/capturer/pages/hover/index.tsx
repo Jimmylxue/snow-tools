@@ -10,7 +10,7 @@ export function HoverCapturer() {
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
-				ipc.send(`window-close-${windowId}`)
+				ipc.send(`HOVER_CAPTURER_SCREEN_CLOSE`, windowId)
 			}
 		}
 		window.addEventListener('keydown', handleKeyDown)
@@ -18,7 +18,8 @@ export function HoverCapturer() {
 	}, [windowId])
 
 	return (
-		customData && (
+		customData &&
+		windowId && (
 			<div className="w-full h-full flex items-center justify-center">
 				{/* 增加内边距给阴影留空间 */}
 				{/* 阴影层 (蓝色发光效果) */}
@@ -39,9 +40,8 @@ export function HoverCapturer() {
 							src={customData?.params?.source}
 							alt=""
 							className="w-full h-full object-contain rounded-lg"
-							style={{
-								// border: '1px solid rgba(66, 133, 244, 1)', // 可选蓝色边框
-								boxShadow: '0 0 10px red', // 可选蓝色边框
+							onLoad={() => {
+								ipc.send('SHOW_HOVER_SCREEN', windowId)
 							}}
 						/>
 					</div>

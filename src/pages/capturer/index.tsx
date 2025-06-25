@@ -76,10 +76,9 @@ export function Capturer() {
 			visibleCanvas.height = img.naturalHeight
 			visibleCanvas.style.width = `${img.naturalWidth / source.scaleFactor}px`
 			visibleCanvas.style.height = `${img.naturalHeight / source.scaleFactor}px`
-
 			const visibleCtx = visibleCanvas.getContext('2d')!
-			visibleCtx.drawImage(img, 0, 0, visibleCanvas.width, visibleCanvas.height)
-
+			visibleCtx.drawImage(img, 0, 0)
+			window.ipcRenderer.send('SHOW_CAPTURER_SCREEN')
 			startRegionSelection()
 		}
 		img.src = source.source
@@ -219,7 +218,7 @@ export function Capturer() {
 				sendCaptureSave(params)
 			}
 
-			setSource(undefined)
+			// setSource(undefined)
 		},
 		[selection]
 	)
@@ -227,13 +226,12 @@ export function Capturer() {
 	const saveScreenshot = useCallback(() => {
 		if (!selection) return
 		completeSelection()
-		sendRouterClose('capturer')
 	}, [selection, completeSelection])
 
 	const hoverScreenshot = useCallback(() => {
 		if (!selection) return
-		completeSelection(true)
 		sendRouterClose('capturer')
+		completeSelection(true)
 	}, [selection, completeSelection])
 
 	const cancelScreenshot = useCallback(() => {

@@ -14,6 +14,7 @@ import { navigate } from '../core'
 import { TCaptureSaveParams } from './type'
 import { hoverWindows } from './hover'
 import { copyImageToClipboard } from '../../utils/storage'
+import { getCurrentDisplay } from '../../utils/display'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -24,7 +25,38 @@ class CaptureWindow implements TWindows {
 
 	isEditingHotKey: boolean = false
 
-	constructor() {}
+	constructor() {
+		ipcMain.on('CAPTURER_SAVE', (_, source: TCaptureSaveParams) => {
+			copyImageToClipboard(source.source)
+		})
+
+		/**
+		 * 展示 屏幕  防止白屏 等待 canvas 渲染好之后再进行展示
+		 */
+		ipcMain.on('SHOW_CAPTURER_SCREEN', () => {
+			this.show()
+		})
+
+		ipcMain.on('CAPTURER_HOVER', (_, source: TCaptureSaveParams) => {
+			hoverWindows.generate(source)
+		})
+
+		ipcMain.on('EDITING_CAPTURER_HOT_KET_COMPLETE', () => {
+			this.isEditingHotKey = false
+			this.updateHotKey()
+		})
+
+		ipcMain.on('EDITING_CAPTURER_HOT_KEY', () => {
+			this.isEditingHotKey = true
+			globalShortcut.unregister(this.currentHotKey)
+			this.currentHotKey = ''
+		})
+
+		ipcMain.on('COMMAND_TRIGGER_CAPTURER', () => {
+			navigate.routerMap?.base.close()
+			this.captureFn()
+		})
+	}
 
 	create() {
 		this.instance = new BrowserWindow({
@@ -54,65 +86,54 @@ class CaptureWindow implements TWindows {
 			this.instance.loadFile(path.join(RENDERER_DIST, 'index.html'))
 		}
 
-		if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
-			this.instance?.webContents.openDevTools()
-		}
+		// if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
+		this.instance?.webContents.openDevTools()
+		// }
 
 		this.updateHotKey()
-
-		ipcMain.on('CAPTURER_SAVE', (_, source: TCaptureSaveParams) => {
-			copyImageToClipboard(source.source)
-		})
-
-		ipcMain.on('CAPTURER_HOVER', (_, source: TCaptureSaveParams) => {
-			hoverWindows.generate(source)
-		})
-
-		ipcMain.on('EDITING_CAPTURER_HOT_KET_COMPLETE', () => {
-			this.isEditingHotKey = false
-			this.updateHotKey()
-		})
-
-		ipcMain.on('EDITING_CAPTURER_HOT_KEY', () => {
-			this.isEditingHotKey = true
-			globalShortcut.unregister(this.currentHotKey)
-			this.currentHotKey = ''
-		})
-
-		ipcMain.on('COMMAND_TRIGGER_CAPTURER', () => {
-			navigate.routerMap?.base.close()
-			this.captureFn()
-		})
 
 		return this.instance
 	}
 
 	destroy() {
 		if (this.instance && !this.instance.isDestroyed()) {
-			this.instance.destroy()
+			this.instance.setOpacity(0)
+			this.instance.removeAllListeners()
+			this.instance.minimize()
+			this.instance!.destroy()
 			this.instance = null
 		}
 	}
 
 	show() {
+		const currentDisplay = getCurrentDisplay()
+		currentDisplay
+		this.instance?.setBounds({
+			x: currentDisplay?.bounds.x,
+			y: currentDisplay?.bounds.y,
+		})
 		this.instance?.setVisibleOnAllWorkspaces(true, {
 			visibleOnFullScreen: true,
 			skipTransformProcessType: true,
 		})
-		this.instance?.hide()
-		setTimeout(() => {
-			this.instance?.show()
-			this.instance?.focus()
-		}, 100)
+		this.instance?.show()
+		this.instance?.focus()
 	}
 
 	close() {
-		this.instance?.hide()
-		this.instance?.webContents.send('CAPTURE_CLOSE')
+		// this.instance?.close()
+		this.destroy()
+
+		// this.instance = null
+		// this.instance?.webContents.send('CAPTURE_CLOSE')
 	}
 
 	captureFn = async () => {
 		try {
+			if (!this.instance) {
+				this.create()
+			}
+			console.log('MMMMM', this.instance?.isVisible(), this.isEditingHotKey)
 			if (this.instance?.isVisible() || this.isEditingHotKey) {
 				/**已展示不可重复开启 */
 				return
@@ -161,8 +182,11 @@ class CaptureWindow implements TWindows {
 				type: 'region',
 			}
 
-			this.instance?.webContents?.send('CAPTURE_TRIGGER', capturerMessage)
-			this.instance?.show()
+			setTimeout(() => {
+				this.instance?.webContents?.send('CAPTURE_TRIGGER', capturerMessage)
+			}, 50)
+			console.log('send \n', capturerMessage)
+			// this.instance?.show()
 		} catch (error) {
 			console.error('Error in captureFn:', error)
 			// Handle the error appropriately, maybe show a message to the user

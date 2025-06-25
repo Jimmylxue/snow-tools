@@ -7,21 +7,63 @@ import { copyImageToClipboard, saveImageToSystem } from '../../utils/storage'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-class HoverWindows {
-	public instances: Map<string, BrowserWindow> = new Map()
+type THoverWindow = {
+	params: TCaptureSaveParams
+	window: BrowserWindow
+}
 
-	constructor() {}
+class HoverWindows {
+	public instances: Map<string, THoverWindow> = new Map()
+
+	constructor() {
+		ipcMain.on('SHOW_HOVER_SCREEN', (_, windowId: string) => {
+			console.log(11111, windowId, this.instances.keys())
+
+			const hoverWindow = this.instances.get(windowId)
+			const instance = hoverWindow?.window
+			if (instance) {
+				console.log(2222)
+
+				const { position, size } = hoverWindow.params
+
+				// 1. 获取当前鼠标所在显示器
+				const mousePosition = screen.getCursorScreenPoint()
+				const targetDisplay = screen.getDisplayNearestPoint(mousePosition)
+
+				// 2. 计算在目标显示器上的绝对位置
+				const absoluteX = targetDisplay.bounds.x + position.x
+				const absoluteY = targetDisplay.bounds.y + position.y
+
+				// 确保窗口在正确位置
+				instance.setBounds({
+					x: absoluteX,
+					y: absoluteY,
+					width: size.width,
+					height: size.height,
+				})
+
+				instance.setVisibleOnAllWorkspaces(true, {
+					visibleOnFullScreen: true,
+					skipTransformProcessType: true,
+				})
+				instance.show()
+				setTimeout(() => {
+					instance.focus()
+				}, 10)
+			}
+		})
+
+		ipcMain.on(`HOVER_CAPTURER_SCREEN_CLOSE`, (_, windowId: string) => {
+			const hoverWindow = this.instances.get(windowId)
+			const instance = hoverWindow?.window
+			ipcMain.removeAllListeners(`window-move-${windowId}`)
+			instance?.close()
+			this.instances.delete(windowId)
+		})
+	}
 
 	generate(params: TCaptureSaveParams) {
-		const { id, size, position } = params
-
-		// 1. 获取当前鼠标所在显示器
-		const mousePosition = screen.getCursorScreenPoint()
-		const targetDisplay = screen.getDisplayNearestPoint(mousePosition)
-
-		// 2. 计算在目标显示器上的绝对位置
-		const absoluteX = targetDisplay.bounds.x + position.x
-		const absoluteY = targetDisplay.bounds.y + position.y
+		const { id, size } = params
 
 		const instance = new BrowserWindow({
 			icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
@@ -37,16 +79,13 @@ class HoverWindows {
 			roundedCorners: true, // 需要设置为true才能显示阴影
 			width: size.width,
 			height: size.height,
-			x: absoluteX,
-			y: absoluteY,
+			backgroundColor: '#00000000', // 透明背景
 		})
 
-		instance.setVisibleOnAllWorkspaces(true, {
-			visibleOnFullScreen: true,
-			skipTransformProcessType: true,
+		this.instances.set(id, {
+			params,
+			window: instance,
 		})
-
-		this.instances.set(id, instance)
 
 		instance.webContents.on('did-finish-load', () => {
 			instance.webContents.executeJavaScript(
@@ -54,18 +93,7 @@ class HoverWindows {
 			)
 			instance.webContents.send('window-init', { params })
 
-			instance.webContents.openDevTools()
-
-			// 确保窗口在正确位置
-			instance.setBounds({
-				x: absoluteX,
-				y: absoluteY,
-				width: size.width,
-				height: size.height,
-			})
-
-			instance.show()
-			instance.focus()
+			// instance.webContents.openDevTools()
 		})
 
 		if (VITE_DEV_SERVER_URL) {
@@ -111,18 +139,6 @@ class HoverWindows {
 		instance.webContents.on('context-menu', e => {
 			e.preventDefault()
 			menu?.popup({ window: instance })
-		})
-
-		ipcMain.on(`window-close-${id}`, () => {
-			ipcMain.removeAllListeners(`window-move-${id}`)
-			instance.close()
-			this.instances.delete(id)
-		})
-
-		ipcMain.on(`window--${id}`, () => {
-			ipcMain.removeAllListeners(`window-move-${id}`)
-			instance.close()
-			this.instances.delete(id)
 		})
 	}
 }
