@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, screen, Menu } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
+import { VITE_DEV_SERVER_URL, RENDERER_DIST, is_mac } from '../../main'
 import { TCaptureSaveParams } from './type'
 import { copyImageToClipboard, saveImageToSystem } from '../../utils/storage'
 
@@ -76,6 +76,13 @@ class HoverWindows {
 
 		ipcMain.on(`window-move-${id}`, (_, { x, y }) => {
 			instance.setPosition(x, y)
+			if (!is_mac) {
+				// 💩 windows 端 拖动会触发缩放  需要多设置一次
+				instance.setBounds({
+					width: size.width,
+					height: size.height,
+				})
+			}
 		})
 
 		const menu = Menu.buildFromTemplate([

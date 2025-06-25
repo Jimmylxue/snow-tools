@@ -14,6 +14,8 @@ export function Draggable({ children }: TProps) {
 	const [offset, setOffset] = useState({ x: 0, y: 0 })
 
 	const handleMouseDown = (e: React.MouseEvent) => {
+		e.stopPropagation()
+		e.preventDefault()
 		if (e.button !== 0) return
 		setIsDragging(true)
 		setOffset({
@@ -22,11 +24,14 @@ export function Draggable({ children }: TProps) {
 		})
 
 		// 防止文本选中
-		e.preventDefault()
+		// e.preventDefault()
+		// 同时阻止冒泡和默认行为
 	}
 
 	useEffect(() => {
 		const handleMouseMove = (e: MouseEvent) => {
+			e.preventDefault()
+			e.stopPropagation()
 			if (isDragging) {
 				ipc.send(`window-move-${windowId}`, {
 					x: e.screenX - offset.x,

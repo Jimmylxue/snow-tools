@@ -16,7 +16,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 	? path.join(process.env.APP_ROOT, 'public')
 	: RENDERER_DIST
 
-const is_mac = process.platform === 'darwin'
+export const is_mac = process.platform === 'darwin'
 if (is_mac) {
 	app.dock.hide() // - 1 -
 }
@@ -47,8 +47,10 @@ app.on('will-quit', () => {
 
 app.whenReady().then(async () => {
 	initRouter()
-	console.log(
-		'辅助功能权限:',
-		await systemPreferences.isTrustedAccessibilityClient(false)
-	)
+	if (is_mac) {
+		console.log(
+			'辅助功能权限:',
+			await systemPreferences.isTrustedAccessibilityClient(false)
+		)
+	}
 })
