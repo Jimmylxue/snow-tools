@@ -2,6 +2,7 @@ import { app, BrowserWindow, systemPreferences } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { initRouter } from './router'
+import { appTray } from './config/tray'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -26,8 +27,10 @@ if (is_mac) {
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') {
 		app.quit()
+
 		// mainWindow = null
 	}
+	appTray.destroy()
 })
 
 app.on('activate', () => {
@@ -36,6 +39,10 @@ app.on('activate', () => {
 	if (BrowserWindow.getAllWindows().length === 0) {
 		// createWindow()
 	}
+})
+
+app.on('will-quit', () => {
+	appTray.destroy()
 })
 
 app.whenReady().then(async () => {

@@ -14,11 +14,31 @@
 			to: 'electron/modules/nsevent-listener/build/Release',
 			filter: ['**/*'],
 		},
+		// 添加图标资源
+		{
+			from: 'public/tray-icon-mac.png',
+			to: 'tray-icon-mac.png', // 直接放在 Resources 根目录
+		},
+		{
+			from: 'public/tray-icon-win.png',
+			to: 'resources/tray-icon-win.png',
+		},
 	],
 	mac: {
 		icon: 'public/logo.png',
 		target: ['dmg'],
 		artifactName: '${productName}-Mac-${version}-Installer.${ext}',
+		// macOS 特定配置
+		extendInfo: {
+			LSUIElement: false, // 确保应用显示在 Dock 和菜单栏
+			NSStatusBarVisible: true, // 确保状态栏图标可见
+		},
+		extraResources: [
+			{
+				from: 'public/tray-icon-mac.png',
+				to: '.',
+			},
+		],
 	},
 	win: {
 		icon: 'public/logo.png',
@@ -29,6 +49,13 @@
 			},
 		],
 		artifactName: '${productName}-Windows-${version}-Setup.${ext}',
+		// 添加 Windows 特定配置
+		extraResources: [
+			{
+				from: 'public/tray-icon-win.png',
+				to: 'resources/tray-icon-win.png',
+			},
+		],
 	},
 	nsis: {
 		oneClick: false,
