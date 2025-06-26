@@ -1,11 +1,18 @@
-import { BrowserWindow, globalShortcut, ipcMain } from 'electron'
+import {
+	BrowserWindow,
+	dialog,
+	globalShortcut,
+	ipcMain,
+	systemPreferences,
+	shell,
+} from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
 import { getOpenWindowBound } from '../../ipc/window'
 import { initClipboard } from '../../biz/clipboard'
 import { currentScreen, screenEvent } from '../../ipc/screen'
-import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
+import { VITE_DEV_SERVER_URL, RENDERER_DIST, is_mac } from '../../main'
 import { getLocalStorageHotKey } from './hotkey'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -17,7 +24,38 @@ class MainWindow implements TWindows {
 
 	isEditingHotKey: boolean = false
 
-	constructor() {}
+	constructor() {
+		ipcMain.on('REQUIRE_PERMISSION', async () => {
+			if (is_mac) {
+				const auxiliaryPermission =
+					await systemPreferences.isTrustedAccessibilityClient(false)
+				if (!auxiliaryPermission) {
+					// 使用 dialog 显示原生弹窗
+					const { response } = await dialog.showMessageBox({
+						type: 'warning',
+						title: '需要辅助功能权限',
+						message: 'snow-tools 需要辅助功能权限才能正常工作',
+						detail:
+							'请前往系统偏好设置 > 安全性与隐私 > 隐私 > 辅助功能，然后添加 snow-tools。',
+						buttons: ['稍后', '立即前往'],
+						defaultId: 1,
+						cancelId: 0,
+					})
+
+					// 如果用户点击"立即前往"
+					if (response === 1) {
+						shell.openExternal(
+							'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'
+						)
+					}
+				}
+				this.instance?.webContents.send(
+					'MAC_AUXILIARY_PERMISSION',
+					auxiliaryPermission
+				)
+			}
+		})
+	}
 
 	create() {
 		const { width, height } = currentScreen.value

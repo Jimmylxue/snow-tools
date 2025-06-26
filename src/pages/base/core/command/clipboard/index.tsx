@@ -9,10 +9,27 @@ import { useClipboard } from '@/hooks/clipboard/useClipboard'
 import { clipboardFilterArr } from './const'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { cloneDeep, debounce } from 'lodash-es'
+import { getIpc } from '@/hooks/ipc'
+import { PermissionPrompt } from '@/components/common/Permission'
+
+const ipc = getIpc()
+
+const isMac = navigator.platform.includes('Mac')
 
 function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0)
 	const contentRef = useRef<HTMLDivElement>(null)
+	/**
+	 * permission 请求锁
+	 */
+	const permissionRequested = useRef(false)
+
+	/**
+	 * mac 端 需要给于权限才可使用
+	 */
+	const [hasPermission, setHasPermission] = useState<boolean>(
+		isMac ? false : true
+	)
 
 	const [typeIndex, setTypeIndex] = useState(0)
 
@@ -104,7 +121,34 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 		[]
 	)
 
-	return (
+	useEffect(() => {
+		if (!isMac) {
+			return
+		}
+		if (!permissionRequested.current) {
+			permissionRequested.current = true
+			ipc.send('REQUIRE_PERMISSION')
+
+			const permissionHandler = (_: unknown, status: boolean) => {
+				setHasPermission(status)
+			}
+
+			ipc.on('MAC_AUXILIARY_PERMISSION', permissionHandler)
+
+			return () => {
+				ipc.off('MAC_AUXILIARY_PERMISSION', permissionHandler)
+			}
+		}
+	}, [])
+
+	return !hasPermission ? (
+		<PermissionPrompt
+			onRequestPermission={() => {
+				ipc.send('REQUIRE_PERMISSION')
+			}}
+			onClose={destructCommand}
+		/>
+	) : (
 		<div className="w-full h-full flex flex-col bg-gray-50 dark:bg-gray-900">
 			<div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
 				<div className="flex items-center">
