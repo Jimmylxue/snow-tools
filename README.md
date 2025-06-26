@@ -37,9 +37,9 @@ https://github.com/user-attachments/assets/34a5f217-7ece-4ea1-b136-8eef449a0031
 - **clipboard**: 系统级别剪切板，随时随地查看复制的内容
   <img width="1920" alt="image" src="https://github.com/user-attachments/assets/bfb44bc6-b41b-43e1-a488-88f8f6ad0437" />
 - **capturer**: 快捷屏幕截屏
-  <img width="1920" alt="image" src="https://github.com/user-attachments/assets/06d37d27-7f92-4baf-b6c1-4f89aab4579a" />
-  
-  https://github.com/user-attachments/assets/b96f3013-e3ab-4d1e-8cc1-33717d3dca68
+  <img width="1920" alt="image" src="https://github.com/user-attachments/assets/5009b978-84d0-4d3f-a4ec-d0b4a91a158b" />
+
+  https://github.com/user-attachments/assets/871cda24-18cd-4f21-b457-594a0cb0728c
 
 ## 安装
 
