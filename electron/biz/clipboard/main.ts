@@ -32,15 +32,17 @@ export function initClipboard(mainWindow: BrowserWindow) {
 	console.log('尝试启动剪切板监听...')
 
 	try {
-		const success = nsevent.startListening(() => {
+		const Fn = () => {
 			try {
-				const text = clipboard.readText()
-				debouncedCopyCallBack(mainWindow, text)
+				setTimeout(() => {
+					debouncedCopyCallBack(mainWindow, clipboard.readText())
+				}, 300)
 			} catch (err) {
 				console.error('读取剪切板失败:', err)
 			}
-		})
-
+		}
+		nsevent.stopListening(Fn)
+		const success = nsevent.startListening(Fn)
 		console.log('监听启动结果:', success)
 	} catch (err) {
 		console.error('监听启动失败:', err)

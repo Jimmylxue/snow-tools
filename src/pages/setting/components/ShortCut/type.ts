@@ -1,4 +1,4 @@
-import { T_HOT_KEY_TYPE } from 'electron/ipc/hotkey'
+import { T_HOT_KEY_TYPE } from 'electron/constant/hotkey/type'
 
 export type TShortCutUUKey = 'OPEN' | 'CAPTURER'
 

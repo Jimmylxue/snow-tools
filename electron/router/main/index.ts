@@ -29,6 +29,11 @@ class MainWindow implements TWindows {
 			if (is_mac) {
 				const auxiliaryPermission =
 					await systemPreferences.isTrustedAccessibilityClient(false)
+
+				if (auxiliaryPermission && this.instance) {
+					initClipboard(this.instance)
+				}
+
 				if (!auxiliaryPermission) {
 					// 使用 dialog 显示原生弹窗
 					const { response } = await dialog.showMessageBox({
@@ -74,7 +79,7 @@ class MainWindow implements TWindows {
 		})
 
 		// Test active push message to Renderer-process.
-		this.instance.webContents.on('did-finish-load', () => {
+		this.instance.webContents.on('did-finish-load', async () => {
 			this.instance?.webContents.executeJavaScript(
 				`window.location.hash = '#/base';`
 			)
@@ -87,7 +92,15 @@ class MainWindow implements TWindows {
 			}
 			this.show()
 			screenEvent(this.instance!)
-			initClipboard(this.instance!)
+			if (!is_mac) {
+				initClipboard(this.instance!)
+			} else {
+				const auxiliaryPermission =
+					await systemPreferences.isTrustedAccessibilityClient(false)
+				if (auxiliaryPermission) {
+					initClipboard(this.instance!)
+				}
+			}
 
 			this.instance?.on('blur', () => {
 				this.instance?.setOpacity(0)
