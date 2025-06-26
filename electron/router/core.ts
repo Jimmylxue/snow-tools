@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { TWindows } from './type'
 
-export type TRouterPage = 'base' | 'setting' | 'capturer'
+export type TRouterPage = 'base' | 'setting' | 'capturer' | 'about'
 
 type TRouterMap = {
 	[key in TRouterPage]: TWindows

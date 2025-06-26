@@ -1,4 +1,4 @@
-import { app, BrowserWindow, systemPreferences } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, systemPreferences } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { initRouter } from './router'
@@ -68,5 +68,24 @@ app.whenReady().then(async () => {
 			'辅助功能权限:',
 			await systemPreferences.isTrustedAccessibilityClient(false)
 		)
+	}
+})
+
+ipcMain.handle('open-external', async (event, url) => {
+	try {
+		// 特别处理mailto协议
+		if (url.startsWith('mailto:')) {
+			const success = shell.openExternal(url)
+			if (!success) {
+				throw new Error('无法打开邮件客户端')
+			}
+			return
+		}
+
+		// 处理普通URL
+		await shell.openExternal(url)
+	} catch (error) {
+		console.error('打开外部链接失败:', error)
+		throw error // 将错误传递回渲染进程
 	}
 })

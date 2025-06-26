@@ -1,4 +1,5 @@
 import { app, BrowserWindow, nativeImage, Tray, Menu } from 'electron'
+import { aboutWindow } from '../router/about'
 import fs from 'fs'
 import path from 'path'
 
@@ -106,6 +107,12 @@ export class AppTray {
 			{
 				label: '重启应用',
 				click: () => this.restartApp(),
+			},
+			{
+				label: '关于',
+				click: () => {
+					aboutWindow.show()
+				},
 			},
 			{ type: 'separator' },
 			{

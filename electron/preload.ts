@@ -26,4 +26,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 			.find(arg => arg.startsWith('--window-id='))
 			?.split('=')[1]
 	},
+
+	openExternal: (url: string) => {
+		return ipcRenderer.invoke('open-external', url)
+	},
 })
