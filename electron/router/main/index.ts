@@ -2,7 +2,7 @@ import { BrowserWindow, globalShortcut, ipcMain } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
-import { showWindow } from '../../ipc/window'
+import { getOpenWindowBound } from '../../ipc/window'
 import { initClipboard } from '../../biz/clipboard'
 import { currentScreen, screenEvent } from '../../ipc/screen'
 import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
@@ -47,9 +47,8 @@ class MainWindow implements TWindows {
 			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
 				this.instance?.webContents.openDevTools()
 			}
-			showWindow(this.instance!)
+			this.show()
 			screenEvent(this.instance!)
-			// registerHotKey(this.instance!)
 			initClipboard(this.instance!)
 
 			this.instance?.on('blur', () => {
@@ -95,9 +94,19 @@ class MainWindow implements TWindows {
 	}
 
 	show() {
+		const { x, y } = getOpenWindowBound()
 		this.instance?.setOpacity(1)
-		this.instance?.focus()
-		showWindow(this.instance!)
+		// 设置窗口位置并显示
+		this.instance?.setBounds({ x, y })
+		this.instance?.setVisibleOnAllWorkspaces(true, {
+			visibleOnFullScreen: true,
+			skipTransformProcessType: false,
+		})
+		// 确保窗口显示和焦点设置之间有足够的延迟
+		setTimeout(() => {
+			this.instance?.show()
+			this.instance?.focus()
+		}, 100)
 		this.instance?.webContents.send('window-shown')
 	}
 

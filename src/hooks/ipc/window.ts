@@ -18,16 +18,6 @@ export function sendRouterChangeEvent(params: TWindowChangeParams) {
 	ipc.send('window-page-event', params)
 }
 
-export function listenScreen() {
-	const windowShownFn = () => {
-		document.getElementById('baseCommandInput')?.focus()
-	}
-	ipc.on('window-shown', windowShownFn)
-	return () => {
-		ipc.off('window-shown', windowShownFn)
-	}
-}
-
 export function sendHideWindowEvent() {
 	ipc.send('screen_close_event')
 }

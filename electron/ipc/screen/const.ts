@@ -2,7 +2,7 @@ import { T_SCREEN_SIZE_TYPE, T_SCREEN_VALUE } from './type'
 
 export const NORMAL_SCREEN_SIZE: T_SCREEN_VALUE = {
 	width: 600,
-	height: 62,
+	height: 300,
 	topProportion: 1.3,
 }
 

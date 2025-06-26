@@ -1,8 +1,4 @@
-import {
-	listenScreen,
-	sendHideWindowEvent,
-	sendWindowSizeEvent,
-} from '@/hooks/ipc/window'
+import { sendHideWindowEvent, sendWindowSizeEvent } from '@/hooks/ipc/window'
 import { useEffect, useState, ChangeEvent, useCallback } from 'react'
 import { observer } from 'mobx-react-lite'
 import {
@@ -26,8 +22,11 @@ import { Loading } from '@/components/common/Loading'
 import { keyMap } from '../../core/command/map'
 import { inputFocus } from '@/lib/utils'
 import { SystemSetting } from '@/pages/setting'
+import { getIpc } from '@/hooks/ipc'
 
 const inputId = 'baseCommandInput'
+
+const ipc = getIpc()
 
 export const CommandBar = observer(() => {
 	const [inputText, setInputText] = useState<string>('')
@@ -40,10 +39,6 @@ export const CommandBar = observer(() => {
 	useEffect(() => {
 		sendWindowSizeEvent(inputText ? 'INPUTTING' : 'NORMAL')
 	}, [inputText])
-
-	useEffect(() => {
-		return listenScreen()
-	}, [])
 
 	useEffect(() => {
 		const id = setTimeout(() => {
@@ -73,6 +68,16 @@ export const CommandBar = observer(() => {
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [currentUseCommand, destructCommand])
+
+	useEffect(() => {
+		const windowShownFn = () => {
+			inputFocus(inputId)
+		}
+		ipc.on('window-shown', windowShownFn)
+		return () => {
+			ipc.off('window-shown', windowShownFn)
+		}
+	}, [])
 
 	const goalCommand = keyMap[currentUseCommand]
 
@@ -113,37 +118,36 @@ export const CommandBar = observer(() => {
 							/>
 						}
 					/>
-					{inputText && (
-						<CommandList>
-							<CommandEmpty>
-								<div className=" mt-4 w-full h-full flex flex-col justify-center items-center">
-									<Loading />
-									<div className="mt-4">No results found.</div>
-								</div>
-							</CommandEmpty>
-							<CommandGroup heading="Git">
-								<CommandItem>
-									<Smile />
-									<span>Git-Moji</span>
-								</CommandItem>
-							</CommandGroup>
-							<CommandGroup heading="tools">
-								<CommandItem>
-									<BookType />
-									<span>translate 翻译</span>
-								</CommandItem>
-								<CommandItem>
-									<ClipboardList />
-									<span>clipboard 剪切板</span>
-								</CommandItem>
-								<CommandItem>
-									<Scissors />
-									<span>capturer 截屏</span>
-								</CommandItem>
-							</CommandGroup>
-							<CommandSeparator />
-						</CommandList>
-					)}
+					<CommandList>
+						<CommandEmpty>
+							<div className=" mt-4 w-full h-full flex flex-col justify-center items-center">
+								<Loading />
+								<div className="mt-4">No results found.</div>
+							</div>
+						</CommandEmpty>
+						<CommandGroup heading="Git">
+							<CommandItem>
+								<Smile />
+								<span>Git-Moji</span>
+							</CommandItem>
+						</CommandGroup>
+						<CommandSeparator />
+						<CommandGroup heading="tools">
+							<CommandItem>
+								<BookType />
+								<span>translate 翻译</span>
+							</CommandItem>
+							<CommandItem>
+								<ClipboardList />
+								<span>clipboard 剪切板</span>
+							</CommandItem>
+							<CommandItem>
+								<Scissors />
+								<span>capturer 截屏</span>
+								{/* <CommandShortcut>⌘2</CommandShortcut> */}
+							</CommandItem>
+						</CommandGroup>
+					</CommandList>
 				</Command>
 			) : (
 				<goalCommand.content destructCommand={destructCommand} />

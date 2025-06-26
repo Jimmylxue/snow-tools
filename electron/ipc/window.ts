@@ -27,22 +27,6 @@ export function getOpenWindowBound() {
 	}
 }
 
-export function showWindow(mainWindow: BrowserWindow) {
-	const { x, y } = getOpenWindowBound()
-
-	// 设置窗口位置并显示
-	mainWindow.setBounds({ x, y, height: currentScreen.value.height })
-	mainWindow.setVisibleOnAllWorkspaces(true, {
-		visibleOnFullScreen: true,
-		skipTransformProcessType: false,
-	})
-	// 确保窗口显示和焦点设置之间有足够的延迟
-	setTimeout(() => {
-		mainWindow.show()
-		mainWindow.focus()
-	}, 100)
-}
-
 export function createSettingWindow() {
 	const settingWindow = new BrowserWindow({
 		icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
