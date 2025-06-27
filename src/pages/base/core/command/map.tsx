@@ -9,3 +9,17 @@ export const keyMap = {
 	[CLIPBOARD_COMMAND.key]: CLIPBOARD_COMMAND,
 	[CAPTURER_COMMAND.key]: CAPTURER_COMMAND,
 }
+
+export const codingCommandGroup = {
+	heading: 'coding',
+	groups: [GITMOJI_COMMAND.commandItem],
+}
+
+export const toolsCommandGroup = {
+	heading: 'tools',
+	groups: [
+		TRANSLATE_COMMAND.commandItem,
+		CAPTURER_COMMAND.commandItem,
+		CLIPBOARD_COMMAND.commandItem,
+	],
+}

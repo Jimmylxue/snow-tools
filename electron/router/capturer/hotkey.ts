@@ -6,5 +6,8 @@ export async function getLocalStorageHotKey(mainWindow: BrowserWindow) {
 			import.meta.env.VITE_APP_MAC_CAPTURER_HOT_KEY
 		}' : '${import.meta.env.VITE_APP_WINDOWS_CAPTURER_HOT_KEY}')`
 	)
+	await mainWindow.webContents.executeJavaScript(
+		`localStorage.setItem('snow-tools-capturer_hotkey', "${hotkey}")`
+	)
 	return hotkey
 }

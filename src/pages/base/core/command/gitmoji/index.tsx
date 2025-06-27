@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { gitMojiList } from './const'
 import { catchEmojiAndCode } from './utils'
 import { TBaseCommandProps } from '../type'
+import { GitMojiCommandItem } from './components/CommandItem'
 
 const placeholderText = 'Please choose git-moji'
 
@@ -100,4 +101,5 @@ export const GITMOJI_COMMAND = {
 	key: 'Git-Moji',
 	placeholder: placeholderText,
 	content: TranslateContent,
+	commandItem: GitMojiCommandItem,
 }

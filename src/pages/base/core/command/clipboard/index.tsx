@@ -11,6 +11,7 @@ import InfiniteScroll from 'react-infinite-scroll-component'
 import { cloneDeep, debounce } from 'lodash-es'
 import { getIpc } from '@/hooks/ipc'
 import { PermissionPrompt } from '@/components/common/Permission'
+import { ClipboardCommandItem } from './components/CommandItem'
 
 const ipc = getIpc()
 
@@ -273,4 +274,5 @@ export const CLIPBOARD_COMMAND = {
 	key: 'clipboard',
 	placeholder: 'please',
 	content: ClipboardContent,
+	commandItem: ClipboardCommandItem,
 }

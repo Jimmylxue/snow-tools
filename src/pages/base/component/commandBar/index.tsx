@@ -6,20 +6,16 @@ import {
 	CommandEmpty,
 	CommandGroup,
 	CommandInput,
-	CommandItem,
 	CommandList,
 	CommandSeparator,
 } from '@/components/ui/command'
-import {
-	BookType,
-	Search,
-	Settings,
-	Smile,
-	ClipboardList,
-	Scissors,
-} from 'lucide-react'
+import { Search, Settings } from 'lucide-react'
 import { Loading } from '@/components/common/Loading'
-import { keyMap } from '../../core/command/map'
+import {
+	codingCommandGroup,
+	keyMap,
+	toolsCommandGroup,
+} from '../../core/command/map'
 import { inputFocus } from '@/lib/utils'
 import { SystemSetting } from '@/pages/setting'
 import { getIpc } from '@/hooks/ipc'
@@ -125,27 +121,27 @@ export const CommandBar = observer(() => {
 								<div className="mt-4">No results found.</div>
 							</div>
 						</CommandEmpty>
-						<CommandGroup heading="Git">
-							<CommandItem>
-								<Smile />
-								<span>Git-Moji</span>
-							</CommandItem>
+						<CommandGroup heading={codingCommandGroup.heading}>
+							{codingCommandGroup.groups.map((Item, index) => (
+								<Item
+									onClickChoose={command => {
+										console.log('ssss', command.split(' ')[0])
+										setCurrentUseCommand(command.split(' ')[0])
+									}}
+									key={index}
+								/>
+							))}
 						</CommandGroup>
 						<CommandSeparator />
-						<CommandGroup heading="tools">
-							<CommandItem>
-								<BookType />
-								<span>translate 翻译</span>
-							</CommandItem>
-							<CommandItem>
-								<ClipboardList />
-								<span>clipboard 剪切板</span>
-							</CommandItem>
-							<CommandItem>
-								<Scissors />
-								<span>capturer 截屏</span>
-								{/* <CommandShortcut>⌘2</CommandShortcut> */}
-							</CommandItem>
+						<CommandGroup heading={toolsCommandGroup.heading}>
+							{toolsCommandGroup.groups.map((Item, index) => (
+								<Item
+									onClickChoose={command =>
+										setCurrentUseCommand(command.split(' ')[0])
+									}
+									key={index}
+								/>
+							))}
 						</CommandGroup>
 					</CommandList>
 				</Command>

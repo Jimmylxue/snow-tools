@@ -2,6 +2,7 @@ import { Scissors } from 'lucide-react'
 import { TBaseCommandProps } from '../type'
 import { useEffect } from 'react'
 import { getIpc } from '@/hooks/ipc'
+import { CapturerCommandItem } from './components/CommandItem'
 
 const ipc = getIpc()
 
@@ -19,4 +20,5 @@ export const CAPTURER_COMMAND = {
 	key: 'capturer',
 	placeholder: '',
 	content: CapturerContent,
+	commandItem: CapturerCommandItem,
 }

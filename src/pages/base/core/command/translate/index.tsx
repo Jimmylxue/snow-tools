@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { languageMap, TShortEn } from '@/api/translate/type'
 import { toast } from 'sonner'
+import { TranslateCommandItem } from './components/CommandItem'
 
 const placeholderText = 'Enter the translation content'
 
@@ -225,4 +226,5 @@ export const TRANSLATE_COMMAND = {
 	key: 'translate',
 	placeholder: placeholderText,
 	content: TranslateContent,
+	commandItem: TranslateCommandItem,
 }
