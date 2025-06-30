@@ -15,6 +15,7 @@ import {
 } from './oberver'
 import { v4 as uuidv4 } from 'uuid'
 import { getIpc } from '@/hooks/ipc'
+import { SelectionSize } from './components/SelectionSize'
 
 const ipc = getIpc()
 
@@ -376,11 +377,18 @@ export function Capturer() {
 						}}
 					/>
 					{isSelecting && selection && (
-						<SelectionBorder
-							selection={selection}
-							showTools={showTools}
-							canvas={visibleCanvasRef?.current}
-						/>
+						<>
+							<SelectionBorder
+								selection={selection}
+								showTools={showTools}
+								canvas={visibleCanvasRef?.current}
+							/>
+							<SelectionSize
+								selection={selection}
+								containerRect={containerRect}
+								source={source}
+							/>
+						</>
 					)}
 				</div>
 			)}
