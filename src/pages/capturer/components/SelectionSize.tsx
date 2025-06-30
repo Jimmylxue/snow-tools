@@ -10,8 +10,8 @@ type TProps = {
 
 export function SelectionSize({ selection, containerRect, source }: TProps) {
 	const { start, end } = selection
-	const width = Math.abs(end.x - start.x)
-	const height = Math.abs(end.y - start.y)
+	const width = Math.abs(end.x - start.x).toFixed(2)
+	const height = Math.abs(end.y - start.y).toFixed(2)
 
 	const margin = 10 / (source?.scaleFactor ?? 1)
 

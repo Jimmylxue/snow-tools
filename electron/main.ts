@@ -71,7 +71,7 @@ app.whenReady().then(async () => {
 	}
 })
 
-ipcMain.handle('open-external', async (event, url) => {
+ipcMain.handle('open-external', async (_, url) => {
 	try {
 		// 特别处理mailto协议
 		if (url.startsWith('mailto:')) {
