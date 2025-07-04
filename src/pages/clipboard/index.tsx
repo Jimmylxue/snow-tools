@@ -1,7 +1,6 @@
 import { sendWindowSizeEvent } from '@/hooks/ipc/window'
-import { ClipboardList, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { TBaseCommandProps } from '../type'
 import { toast } from 'sonner'
 import { TClipboardItem, useClipboardDB } from '@/hooks/clipboard/db'
 import { CopyItem } from './components/CopyItem'
@@ -11,13 +10,12 @@ import InfiniteScroll from 'react-infinite-scroll-component'
 import { cloneDeep, debounce } from 'lodash-es'
 import { getIpc } from '@/hooks/ipc'
 import { PermissionPrompt } from '@/components/common/Permission'
-import { ClipboardCommandItem } from './components/CommandItem'
 
 const ipc = getIpc()
 
 const isMac = navigator.platform.includes('Mac')
 
-function ClipboardContent({ destructCommand }: TBaseCommandProps) {
+export function Clipboard() {
 	const [selectedIndex, setSelectedIndex] = useState(0)
 	const contentRef = useRef<HTMLDivElement>(null)
 	/**
@@ -103,7 +101,7 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 	)
 
 	useEffect(() => {
-		sendWindowSizeEvent('CLIPBOARD_HISTORY_PAGE')
+		sendWindowSizeEvent('CLIPBOARD')
 		return () => sendWindowSizeEvent('INPUTTING')
 	}, [])
 
@@ -129,13 +127,11 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 		if (!permissionRequested.current) {
 			permissionRequested.current = true
 			ipc.send('REQUIRE_PERMISSION')
-
 			const permissionHandler = (_: unknown, status: boolean) => {
+				console.log('hasPermission')
 				setHasPermission(status)
 			}
-
 			ipc.on('MAC_AUXILIARY_PERMISSION', permissionHandler)
-
 			return () => {
 				ipc.off('MAC_AUXILIARY_PERMISSION', permissionHandler)
 			}
@@ -147,7 +143,7 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 			onRequestPermission={() => {
 				ipc.send('REQUIRE_PERMISSION')
 			}}
-			onClose={destructCommand}
+			// onClose={destructCommand}
 		/>
 	) : (
 		<div className="w-full h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -157,7 +153,7 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 						剪切板历史
 					</h1>
 					<button
-						onClick={destructCommand}
+						// onClick={destructCommand}
 						className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 ml-2"
 						aria-label="关闭剪切板历史"
 						title="关闭"
@@ -267,12 +263,4 @@ function ClipboardContent({ destructCommand }: TBaseCommandProps) {
 			</div>
 		</div>
 	)
-}
-
-export const CLIPBOARD_COMMAND = {
-	icon: <ClipboardList className="mr-2 shrink-0 opacity-50" />,
-	key: 'clipboard',
-	placeholder: 'please',
-	content: ClipboardContent,
-	commandItem: ClipboardCommandItem,
 }

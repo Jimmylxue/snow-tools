@@ -1,11 +1,8 @@
 import { useTranslateV2 } from '@/api/translate'
 import { copyToClipboard, inputFocus } from '@/lib/utils'
-import { BookType } from 'lucide-react'
 import { observer } from 'mobx-react-lite'
 import { useState, useRef, KeyboardEvent } from 'react'
 import { TranslateContextProvider, useTranslateConfig } from './context'
-import { TBaseCommandProps } from '../type'
-
 import {
 	Select,
 	SelectContent,
@@ -16,11 +13,8 @@ import {
 } from '@/components/ui/select'
 import { languageMap, TShortEn } from '@/api/translate/type'
 import { toast } from 'sonner'
-import { TranslateCommandItem } from './components/CommandItem'
 
-const placeholderText = 'Enter the translation content'
-
-export const Child = observer((_: TBaseCommandProps) => {
+export const Child = observer(() => {
 	const { from, to, updateFrom, updateTo, replace } = useTranslateConfig()
 
 	const { mutateAsync, isPending, data, reset } = useTranslateV2({
@@ -60,7 +54,7 @@ export const Child = observer((_: TBaseCommandProps) => {
 	}
 
 	return (
-		<div className="w-[600px] h-[300px] bg-[#f5f6fa] rounded-[10px] shadow-[0_2px_12px_0_rgba(0,0,0,0.08)] flex flex-col overflow-hidden border border-[#e0e3eb] relative">
+		<div className="w-full h-screen bg-[#f5f6fa] rounded-[10px] shadow-[0_2px_12px_0_rgba(0,0,0,0.08)] flex flex-col overflow-hidden border border-[#e0e3eb] relative">
 			{/* Language Selection */}
 			<div className="flex items-center px-4 py-3 border-b border-[#e0e3eb] bg-white">
 				<Select
@@ -213,18 +207,10 @@ export const Child = observer((_: TBaseCommandProps) => {
 	)
 })
 
-export const TranslateContent = ({ destructCommand }: TBaseCommandProps) => {
+export const Translate = () => {
 	return (
 		<TranslateContextProvider>
-			<Child destructCommand={destructCommand} />
+			<Child />
 		</TranslateContextProvider>
 	)
-}
-
-export const TRANSLATE_COMMAND = {
-	icon: <BookType className="mr-2 shrink-0 opacity-50" />,
-	key: 'translate',
-	placeholder: placeholderText,
-	content: TranslateContent,
-	commandItem: TranslateCommandItem,
 }

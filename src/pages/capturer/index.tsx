@@ -83,7 +83,7 @@ export function Capturer() {
 			visibleCanvas.style.height = `${img.naturalHeight / source.scaleFactor}px`
 			const visibleCtx = visibleCanvas.getContext('2d')!
 			visibleCtx.drawImage(img, 0, 0)
-			window.ipcRenderer.send('SHOW_CAPTURER_SCREEN')
+			ipc.send('SHOW_CAPTURER_SCREEN')
 			startRegionSelection()
 		}
 		img.src = source.source

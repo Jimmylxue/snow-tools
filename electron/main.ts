@@ -4,6 +4,7 @@ import path from 'node:path'
 import { initRouter } from './router'
 import { appTray } from './config/tray'
 import { navigate } from './router/core'
+import fs from 'fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -60,6 +61,24 @@ app.on('activate', () => {
 app.on('will-quit', () => {
 	appTray.destroy()
 })
+
+// 动态获取图标目录
+function getIconsDir() {
+	if (process.env.NODE_ENV === 'development') {
+		// 开发模式：使用dist-electron/icons
+		return path.join(__dirname, 'icons')
+	} else {
+		// 生产模式：使用userData下的目录
+		return path.join(app.getPath('userData'), 'appIcons')
+	}
+}
+
+const iconsDir = getIconsDir()
+
+// 确保目录存在
+if (!fs.existsSync(iconsDir)) {
+	fs.mkdirSync(iconsDir, { recursive: true })
+}
 
 app.whenReady().then(async () => {
 	initRouter()

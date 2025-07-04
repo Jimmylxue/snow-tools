@@ -62,7 +62,7 @@ class HoverWindows {
 		const { id, size } = params
 
 		const instance = new BrowserWindow({
-			icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
+			icon: path.join(process.env.VITE_PUBLIC || '', 'logo.png'),
 			webPreferences: {
 				preload: path.join(__dirname, 'preload.mjs'),
 				additionalArguments: [`--window-id=${id}`],

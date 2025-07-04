@@ -26,10 +26,22 @@ export function sendRouterClose(router: TRouterPage) {
 	ipc.send('ROUTER_CLOSE', router)
 }
 
+export function sendRouterNavigate(router: TRouterPage) {
+	ipc.send('ROUTER_NAVIGATE', router)
+}
+
 export function sendCaptureSave(source: TCaptureSaveParams) {
 	ipc.send('CAPTURER_SAVE', source)
 }
 
 export function sendCaptureHover(source: TCaptureSaveParams) {
 	ipc.send('CAPTURER_HOVER', source)
+}
+
+export function sendNavigateBack() {
+	ipc.send('ROUTER_ESC_BACK')
+}
+
+export function sendOpenApp(appName: string) {
+	ipc.send('OPEN_APP', appName)
 }

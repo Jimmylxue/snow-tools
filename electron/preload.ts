@@ -30,4 +30,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 	openExternal: (url: string) => {
 		return ipcRenderer.invoke('open-external', url)
 	},
+
+	getInstalledApps: () => {
+		return ipcRenderer.invoke('getInstalledApps')
+	},
 })

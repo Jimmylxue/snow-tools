@@ -1,25 +1,21 @@
-import {
-	BrowserWindow,
-	globalShortcut,
-	desktopCapturer,
-	screen,
-	ipcMain,
-} from 'electron'
+import { BrowserWindow, desktopCapturer, screen, ipcMain } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
 import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
-import { getLocalStorageHotKey } from './hotkey'
 import { navigate } from '../core'
 import { TCaptureSaveParams } from './type'
 import { hoverWindows } from './hover'
 import { copyImageToClipboard } from '../../utils/storage'
 import { getCurrentDisplay } from '../../utils/display'
+import { NORMAL_SCREEN_SIZE, T_SCREEN_SIZE_TYPE } from '../../ipc/screen'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 class CaptureWindow implements TWindows {
 	public instance: BrowserWindow | null = null
+
+	routerName: T_SCREEN_SIZE_TYPE = 'TRANSLATE'
 
 	public currentHotKey: string = ''
 
@@ -41,20 +37,9 @@ class CaptureWindow implements TWindows {
 			hoverWindows.generate(source)
 		})
 
-		ipcMain.on('EDITING_CAPTURER_HOT_KET_COMPLETE', () => {
-			this.isEditingHotKey = false
-			this.updateHotKey()
-		})
-
-		ipcMain.on('EDITING_CAPTURER_HOT_KEY', () => {
-			this.isEditingHotKey = true
-			globalShortcut.unregister(this.currentHotKey)
-			this.currentHotKey = ''
-		})
-
 		ipcMain.on('COMMAND_TRIGGER_CAPTURER', () => {
 			navigate.routerMap?.base.close()
-			this.captureFn()
+			this.shortcutCallback()
 		})
 
 		ipcMain.on('CAPTURE_LOG', (_, log) => {
@@ -64,7 +49,7 @@ class CaptureWindow implements TWindows {
 
 	create(onLoad?: () => void) {
 		this.instance = new BrowserWindow({
-			icon: path.join(process.env.VITE_PUBLIC, 'logo.png'),
+			icon: path.join(process.env.VITE_PUBLIC || '', 'logo.png'),
 			webPreferences: {
 				preload: path.join(__dirname, 'preload.mjs'),
 			},
@@ -82,8 +67,6 @@ class CaptureWindow implements TWindows {
 				`window.location.hash = '#/capturer';`
 			)
 			this.instance!.setBounds({ x: 0, y: 0 })
-
-			this.updateHotKey()
 			onLoad?.()
 		})
 
@@ -112,7 +95,6 @@ class CaptureWindow implements TWindows {
 
 	show() {
 		const currentDisplay = getCurrentDisplay()
-		currentDisplay
 		this.instance?.setBounds({
 			x: currentDisplay?.bounds.x,
 			y: currentDisplay?.bounds.y,
@@ -126,14 +108,10 @@ class CaptureWindow implements TWindows {
 	}
 
 	close() {
-		// this.instance?.close()
 		this.destroy()
-
-		// this.instance = null
-		// this.instance?.webContents.send('CAPTURE_CLOSE')
 	}
 
-	captureFn = async () => {
+	shortcutCallback = async () => {
 		try {
 			const todoFn = async () => {
 				if (this.instance?.isVisible() || this.isEditingHotKey) {
@@ -169,6 +147,13 @@ class CaptureWindow implements TWindows {
 					},
 				})
 
+				/**
+				 * 这是一个bugfix 在mac 端 初次截屏 会导致 base 的窗口高度触发变化
+				 */
+				navigate.routerMap?.base.instance?.setBounds({
+					height: NORMAL_SCREEN_SIZE.height,
+				})
+
 				const primarySource = sources.find(
 					source => source.display_id === currentDisplay.id.toString()
 				)
@@ -199,25 +184,6 @@ class CaptureWindow implements TWindows {
 		} catch (error) {
 			console.error('Error in captureFn:', error)
 			// Handle the error appropriately, maybe show a message to the user
-		}
-	}
-
-	async updateHotKey() {
-		const hotkey = await getLocalStorageHotKey(this.instance!)
-		if (hotkey === this.currentHotKey) return
-
-		if (this.currentHotKey) {
-			globalShortcut.unregister(this.currentHotKey)
-		}
-
-		try {
-			globalShortcut.register(hotkey, this.captureFn)
-			this.currentHotKey = hotkey
-			console.log(`Capturer Hotkey updated to: ${hotkey}`)
-		} catch (error) {
-			console.error('Failed to register hotkey:', error)
-			// 可以在这里通知渲染进程注册失败
-			this.instance?.webContents.send('hotkey-register-capturer_failed', hotkey)
 		}
 	}
 }

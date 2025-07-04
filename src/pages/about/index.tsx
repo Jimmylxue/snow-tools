@@ -1,8 +1,11 @@
+import { getIpc } from '@/hooks/ipc'
 import { Github } from 'lucide-react'
+
+const ipc = getIpc()
+
 export function About() {
 	const openExternal = (url: string) => {
-		console.log('oooooo')
-		window.ipcRenderer.openExternal(url)
+		ipc.openExternal(url)
 	}
 	return (
 		<div className="w-[500px] h-screen bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden border border-gray-100 flex flex-col">
@@ -114,7 +117,6 @@ export function About() {
 					<div
 						className="flex items-center text-xs text-gray-600 hover:text-blue-500 transition-colors cursor-pointer "
 						onClick={() => {
-							console.log('<<<<<<')
 							openExternal('https://github.com/Jimmylxue/snow-tools')
 						}}
 					>

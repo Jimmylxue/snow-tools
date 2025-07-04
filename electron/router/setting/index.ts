@@ -3,15 +3,18 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
 import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
-import { ABOUT_SCREEN_SIZE, T_SCREEN_SIZE_TYPE } from '../../ipc/screen'
+import {
+	SYSTEM_SETTING_SCREEN_SIZE,
+	T_SCREEN_SIZE_TYPE,
+} from '../../ipc/screen'
 import { getCenterPositionBoundByRouter } from '../../utils/display'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-class AboutWindow implements TWindows {
+class SettingWindow implements TWindows {
 	public instance: BrowserWindow | null = null
 
-	routerName: T_SCREEN_SIZE_TYPE = 'ABOUT'
+	routerName: T_SCREEN_SIZE_TYPE = 'SETTING'
 
 	constructor() {}
 
@@ -25,13 +28,12 @@ class AboutWindow implements TWindows {
 				contextIsolation: true,
 			},
 			resizable: false,
-			frame: true,
+			frame: false,
 			alwaysOnTop: true,
 			show: false,
 			fullscreenable: true,
-			roundedCorners: false,
-			width: ABOUT_SCREEN_SIZE.width,
-			height: ABOUT_SCREEN_SIZE.height,
+			width: SYSTEM_SETTING_SCREEN_SIZE.width,
+			height: SYSTEM_SETTING_SCREEN_SIZE.height,
 			x,
 			y,
 		})
@@ -39,7 +41,7 @@ class AboutWindow implements TWindows {
 		// Test active push message to Renderer-process.
 		this.instance.webContents.on('did-finish-load', () => {
 			this.instance?.webContents.executeJavaScript(
-				`window.location.hash = '#/about';`
+				`window.location.hash = '#/setting';`
 			)
 			onLoad?.()
 		})
@@ -82,10 +84,10 @@ class AboutWindow implements TWindows {
 	}
 
 	close() {
-		this.destroy()
+		this.instance?.hide()
 	}
 
 	shortcutCallback() {}
 }
 
-export const aboutWindow = new AboutWindow()
+export const settingWindow = new SettingWindow()

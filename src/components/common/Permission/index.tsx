@@ -11,7 +11,7 @@ export const PermissionPrompt = ({
 }: PermissionPromptProps) => {
 	return (
 		<div
-			className={`w-full h-full flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden ${className}`}
+			className={`w-full h-screen flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden ${className}`}
 		>
 			{/* 头部 */}
 			<div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-gray-50/50 relative">

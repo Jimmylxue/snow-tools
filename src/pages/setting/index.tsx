@@ -7,20 +7,17 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from './components/Separator'
 import { StartShortCut } from './components/ShortCut'
+import { sendNavigateBack } from '@/hooks/ipc/window'
 
-type TProps = {
-	show: boolean
-	onClose: () => void
-}
-
-export function SystemSetting({ show, onClose }: TProps) {
+export function SystemSetting() {
 	return (
 		<div>
 			<Dialog
-				open={show}
+				open={true}
 				onOpenChange={status => {
 					if (status === false) {
-						onClose()
+						// onClose()
+						sendNavigateBack()
 					}
 				}}
 			>
