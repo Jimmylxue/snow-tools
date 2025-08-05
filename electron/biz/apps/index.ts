@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import { app, ipcMain, protocol } from 'electron'
 import { TApp } from './type'
+import { getLocalAppName } from './utils'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -80,8 +81,18 @@ export function initApps() {
 					fs.mkdirSync(iconsDir)
 				}
 
-				apps.forEach(app => {
-					const appName = app.replace('.app', '')
+				apps.forEach(async app => {
+					const originAppName = app.replace('.app', '')
+					console.log('111')
+					let appName = ''
+					try {
+						appName = await getLocalAppName(app)
+						console.log('222')
+					} catch (error) {
+						appName = originAppName
+						// console.log('333')
+					}
+
 					const appPath = `/Applications/${app}`
 					const plistPath = `${appPath}/Contents/Info.plist`
 					// 获取图标文件名
@@ -94,9 +105,8 @@ export function initApps() {
 							if (!iconFile.endsWith('.icns')) {
 								iconFile += '.icns'
 							}
-
 							const iconPath = `${appPath}/Contents/Resources/${iconFile}`
-							const pngPath = path.join(iconsDir, `${appName}.png`)
+							const pngPath = path.join(iconsDir, `${originAppName}.png`)
 
 							// 检查图标文件是否存在
 							if (!fs.existsSync(iconPath)) {
@@ -118,7 +128,11 @@ export function initApps() {
 										const safeUrl = `app-icon:///${relativePath
 											.split(path.sep)
 											.join('/')}`
-
+										// console.log('push~', {
+										// 	appName,
+										// 	iconUrl: safeUrl, // 使用协议URL
+										// 	nativePath: pngPath, // 保留原始路径供其他用途
+										// })
 										iconsData.push({
 											appName,
 											iconUrl: safeUrl, // 使用协议URL

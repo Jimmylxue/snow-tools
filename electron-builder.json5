@@ -7,7 +7,7 @@
 	directories: {
 		output: 'release/${version}',
 	},
-	files: ['dist', 'dist-electron'],
+	files: ['dist', 'dist-electron', 'public/**/*'],
 	extraResources: [
 		{
 			from: 'electron/modules/nsevent-listener/build/Release',
@@ -22,6 +22,11 @@
 		{
 			from: 'public/tray-icon-win.png',
 			to: 'resources/tray-icon-win.png',
+		},
+		{
+			from: 'public',
+			to: 'public', // 保持相同结构
+			filter: ['**/*'],
 		},
 	],
 	mac: {
