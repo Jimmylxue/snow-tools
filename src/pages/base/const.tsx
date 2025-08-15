@@ -1,4 +1,9 @@
 import { TTools } from './type'
+import TranslatePng from '@/assets/img/tool-translate.png'
+import GitmojiPng from '@/assets/img/tool-gitmoji.png'
+import CapturePng from '@/assets/img/tool-capturer.png'
+import ClipboardPng from '@/assets/img/tool-clipboard.png'
+import SettingPng from '@/assets/img/tool-setting.png'
 
 export const allTools: TTools[] = [
 	{
@@ -6,7 +11,7 @@ export const allTools: TTools[] = [
 		name: '翻译',
 		icon: '📖',
 		recommended: true,
-		iconUrl: '/tool-translate.png',
+		iconUrl: TranslatePng,
 		routerName: 'translate',
 	},
 	{
@@ -14,7 +19,7 @@ export const allTools: TTools[] = [
 		name: 'gitmoji',
 		icon: '😜',
 		recommended: true,
-		iconUrl: '/tool-gitmoji.png',
+		iconUrl: GitmojiPng,
 		routerName: 'gitmoji',
 	},
 	{
@@ -22,7 +27,7 @@ export const allTools: TTools[] = [
 		name: '截屏',
 		icon: '🔒',
 		recommended: true,
-		iconUrl: '/tool-capturer.png',
+		iconUrl: CapturePng,
 		routerName: 'capturer',
 	},
 	{
@@ -30,7 +35,7 @@ export const allTools: TTools[] = [
 		name: '剪切板',
 		icon: '📋',
 		recommended: false,
-		iconUrl: '/tool-clipboard.png',
+		iconUrl: ClipboardPng,
 		routerName: 'clipboard',
 	},
 	{
@@ -38,7 +43,7 @@ export const allTools: TTools[] = [
 		name: '设置',
 		icon: '🔧',
 		recommended: true,
-		iconUrl: '/tool-setting.png',
+		iconUrl: SettingPng,
 		routerName: 'setting',
 	},
 ]

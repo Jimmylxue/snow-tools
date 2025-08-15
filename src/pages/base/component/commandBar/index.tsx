@@ -5,6 +5,7 @@ import { SearchResult } from '../SearchResult'
 import { STool } from '../STool'
 import { getIpc } from '@/hooks/ipc'
 import { sendRouterNavigate } from '@/hooks/ipc/window'
+import LogoPng from '@/assets/img/logo.png'
 
 const ipc = getIpc()
 
@@ -76,7 +77,7 @@ export const SnowTools = () => {
 				<div className="flex items-center space-x-3">
 					{/* Logo with subtle background and shadow */}
 					<div className="flex-shrink-0 bg-white p-2 rounded-lg shadow-sm border border-gray-100">
-						<img src="/logo.png" className="size-8" alt="SnowTools Logo" />
+						<img src={LogoPng} className="size-8" alt="SnowTools Logo" />
 					</div>
 
 					{/* Input with integrated styling */}
@@ -117,40 +118,6 @@ export const SnowTools = () => {
 								})}
 							</div>
 						</div>
-
-						{/* Recommended section (1 row max) */}
-						{/* <div className="px-4 pt-3 pb-1 text-xs font-medium text-gray-500">
-							Recommended Tools
-						</div>
-						<div className="px-3 pb-2">
-							<div className="grid grid-cols-6 gap-2">
-								{recommendedTools.slice(0, 6).map((tool, index) => {
-									const recommendIndex = index + 12
-									return (
-										<div
-											key={`rec-${tool.id}`}
-											className={`flex flex-col items-center p-2 rounded-lg cursor-pointer transition-all ${
-												selectedIndex === recommendIndex
-													? 'bg-green-50 outline outline-green-200'
-													: 'hover:bg-gray-50'
-											}`}
-											onClick={() => setSelectedIndex(recommendIndex)}
-										>
-											<div className="text-2xl mb-1">{tool.icon}</div>
-											<div
-												className={`text-xs font-medium ${
-													selectedIndex === recommendIndex
-														? 'text-green-600'
-														: 'text-gray-600'
-												}`}
-											>
-												{tool.name}
-											</div>
-										</div>
-									)
-								})}
-							</div>
-						</div> */}
 					</>
 				) : (
 					<SearchResult searchResult={searchResult} />

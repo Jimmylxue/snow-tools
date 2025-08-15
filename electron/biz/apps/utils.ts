@@ -16,7 +16,6 @@ export function getLocalAppName(originAppName: string): Promise<string> {
 				const regex = /kMDItemDisplayName\s*=\s*"([^"]*)"/
 				const match = stdout.match(regex)
 				const appName = match?.[1] || '未知应用'
-				console.log(appName)
 				resolve(appName)
 			}
 		)

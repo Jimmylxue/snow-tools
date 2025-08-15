@@ -83,11 +83,9 @@ export function initApps() {
 
 				apps.forEach(async app => {
 					const originAppName = app.replace('.app', '')
-					console.log('111')
 					let appName = ''
 					try {
 						appName = await getLocalAppName(app)
-						console.log('222')
 					} catch (error) {
 						appName = originAppName
 						// console.log('333')
