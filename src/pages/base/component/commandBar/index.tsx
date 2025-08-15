@@ -20,12 +20,21 @@ export const SnowTools = () => {
 		if (!input.trim()) {
 			return []
 		}
-		const filterApps = apps.filter(item => item.appName.includes(input))
-		const filterTools = allTools.filter(item => item.name.includes(input))
+		const inputText = input.toUpperCase()
+
+		const filterApps = apps.filter(item => {
+			const appName = item.appName.toUpperCase()
+			return appName.includes(inputText)
+		})
+		const filterTools = allTools.filter(item => {
+			const toolName = item.name?.toUpperCase()
+			return toolName.includes(inputText)
+		})
 		return [...filterApps, ...filterTools]
 	}, [input, apps])
 
 	useEffect(() => {
+		const isShowSearchResult = input?.trim() !== ''
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const cols = 6 // Number of columns in grid
 			const displayedTools = allTools
@@ -65,9 +74,10 @@ export const SnowTools = () => {
 				console.log(`Executing: ${displayedTools[selectedIndex].name}`)
 			}
 		}
-
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
+		if (!isShowSearchResult) {
+			window.addEventListener('keydown', handleKeyDown)
+			return () => window.removeEventListener('keydown', handleKeyDown)
+		}
 	}, [selectedIndex, input])
 
 	return (

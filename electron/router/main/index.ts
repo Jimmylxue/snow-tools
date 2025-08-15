@@ -47,7 +47,7 @@ class MainWindow implements TWindows {
 				'main-process-message',
 				new Date().toLocaleString()
 			)
-			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
+			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS !== 'true') {
 				this.instance?.webContents.openDevTools()
 			}
 			this.show()

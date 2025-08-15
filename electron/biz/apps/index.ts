@@ -133,6 +133,7 @@ export function initApps() {
 										// })
 										iconsData.push({
 											appName,
+											originAppName,
 											iconUrl: safeUrl, // 使用协议URL
 											nativePath: pngPath, // 保留原始路径供其他用途
 										})

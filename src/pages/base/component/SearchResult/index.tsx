@@ -46,7 +46,7 @@ export function SearchResult({ searchResult }: TProps) {
 				const selectedItem = searchResult[selectedIndex]
 				const isApp = (selectedItem as TApp).nativePath
 				if (isApp) {
-					sendOpenApp((selectedItem as TApp).appName)
+					sendOpenApp((selectedItem as TApp).originAppName)
 				} else {
 					sendRouterNavigate((selectedItem as TTools).routerName)
 				}
