@@ -9,6 +9,7 @@ type TProps = {
 			| 'RESET'
 			| 'SELECT'
 			| 'DRAW'
+			| 'RECT'
 			| 'CLEAR_DRAW'
 			| 'CANCEL'
 			| 'SAVE'
@@ -135,6 +136,18 @@ export function ToolBar({
 					onClick={() => onTriggerEvent('DRAW')}
 				>
 					涂鸦
+				</button>
+
+				<button
+					className={`px-3 h-9 rounded-md text-sm font-medium transition-all
+            ${
+							activeState === 'rect'
+								? 'bg-[#1E90FF] text-white'
+								: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
+						}`}
+					onClick={() => onTriggerEvent('RECT')}
+				>
+					框选
 				</button>
 
 				{/* 分隔线 */}

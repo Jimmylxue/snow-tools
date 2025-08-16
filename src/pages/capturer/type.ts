@@ -1,4 +1,4 @@
-export type Tool = 'select' | 'draw' | 'erase'
+export type Tool = 'select' | 'draw' | 'erase' | 'rect'
 
 export type Position = {
 	x: number

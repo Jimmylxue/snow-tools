@@ -45,6 +45,16 @@ export function Capturer() {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const containerRect = containerRef?.current?.getBoundingClientRect()
 
+	const [rectangles, setRectangles] = useState<
+		Array<{ start: Position; end: Position; color: string; width: number }>
+	>([])
+	const [currentRectangle, setCurrentRectangle] = useState<{
+		start: Position
+		end: Position
+		color: string
+		width: number
+	} | null>(null)
+
 	// 处理截屏通知
 	useEffect(() => {
 		return capturerObserve.subscribe(content => {
@@ -122,6 +132,14 @@ export function Capturer() {
 					color: drawColor,
 					width: drawWidth,
 				})
+			} else if (activeTool === 'rect') {
+				setDrawing(true)
+				setCurrentRectangle({
+					start: { x, y },
+					end: { x, y },
+					color: drawColor,
+					width: drawWidth,
+				})
 			}
 		},
 		[
@@ -148,6 +166,11 @@ export function Capturer() {
 					...prev!,
 					path: [...prev!.path, { x, y }],
 				}))
+			} else if (drawing && currentRectangle && activeTool === 'rect') {
+				setCurrentRectangle(prev => ({
+					...prev!,
+					end: { x, y },
+				}))
 			}
 		},
 		[
@@ -155,6 +178,7 @@ export function Capturer() {
 			activeTool,
 			drawing,
 			currentDrawing,
+			currentRectangle,
 			showTools,
 			getScaledPosition,
 		]
@@ -179,8 +203,20 @@ export function Capturer() {
 			setCurrentDrawing(null)
 		}
 
+		if (drawing && currentRectangle && activeTool === 'rect') {
+			setRectangles(prev => [...prev, currentRectangle])
+			setCurrentRectangle(null)
+		}
+
 		setDrawing(false)
-	}, [isSelecting, selection, activeTool, drawing, currentDrawing])
+	}, [
+		isSelecting,
+		selection,
+		activeTool,
+		drawing,
+		currentDrawing,
+		currentRectangle,
+	])
 
 	const completeSelection = useCallback(
 		(isHoverCapture: boolean = false) => {
@@ -295,6 +331,30 @@ export function Capturer() {
 			ctx.restore()
 		}
 
+		// 绘制所有已保存的矩形
+		rectangles.forEach(rect => {
+			const x = Math.min(rect.start.x, rect.end.x)
+			const y = Math.min(rect.start.y, rect.end.y)
+			const width = Math.abs(rect.end.x - rect.start.x)
+			const height = Math.abs(rect.end.y - rect.start.y)
+
+			ctx.strokeStyle = rect.color
+			ctx.lineWidth = rect.width
+			ctx.strokeRect(x, y, width, height)
+		})
+
+		// 绘制当前正在绘制的矩形
+		if (currentRectangle) {
+			const x = Math.min(currentRectangle.start.x, currentRectangle.end.x)
+			const y = Math.min(currentRectangle.start.y, currentRectangle.end.y)
+			const width = Math.abs(currentRectangle.end.x - currentRectangle.start.x)
+			const height = Math.abs(currentRectangle.end.y - currentRectangle.start.y)
+
+			ctx.strokeStyle = currentRectangle.color
+			ctx.lineWidth = currentRectangle.width
+			ctx.strokeRect(x, y, width, height)
+		}
+
 		// 绘制所有已保存的绘画（保持不变）
 		drawings.forEach(drawing => {
 			if (drawing.path.length < 2) return
@@ -323,7 +383,15 @@ export function Capturer() {
 			}
 			ctx.stroke()
 		}
-	}, [source, selection, drawings, currentDrawing, backgroundImage])
+	}, [
+		source,
+		selection,
+		rectangles,
+		currentRectangle,
+		drawings,
+		currentDrawing,
+		backgroundImage,
+	])
 
 	useEffect(() => {
 		drawCanvas()
@@ -419,9 +487,14 @@ export function Capturer() {
 						case 'DRAW':
 							setActiveTool('draw')
 							break
+						case 'RECT':
+							setActiveTool('rect')
+							break
 						case 'CLEAR_DRAW':
 							setDrawings([])
 							setCurrentDrawing(null)
+							setRectangles([])
+							setCurrentRectangle(null)
 							break
 						case 'CANCEL':
 							cancelScreenshot()
