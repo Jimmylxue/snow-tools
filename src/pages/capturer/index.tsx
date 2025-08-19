@@ -69,6 +69,8 @@ export function Capturer() {
 			setSource(undefined)
 			setDrawings([])
 			setCurrentDrawing(null)
+			setRectangles([])
+			setCurrentRectangle(null)
 		})
 	}, [])
 
@@ -404,6 +406,7 @@ export function Capturer() {
 				if (showTools) {
 					setSelection(null)
 					setDrawings([])
+					setRectangles([])
 					setShowTools(false)
 					setActiveTool('select')
 				} else if (selection) {
@@ -413,6 +416,8 @@ export function Capturer() {
 					setSource(undefined)
 					setDrawings([])
 					setCurrentDrawing(null)
+					setRectangles([])
+					setCurrentRectangle(null)
 					ipc.send('CAPTURE_LOG', 'CAPTURE_WINDOWS_CLOSE')
 					sendRouterClose('capturer')
 				}
