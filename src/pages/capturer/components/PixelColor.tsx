@@ -174,7 +174,7 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 		pixelColor &&
 		infoBoxPosition && (
 			<div
-				className="fixed flex flex-col p-3 bg-[#2C2C2C] rounded-lg shadow-2xl z-50 border border-gray-700 backdrop-blur-sm bg-opacity-90 w-[200px]"
+				className="fixed flex flex-col p-3 bg-[#2C2C2C] rounded-lg shadow-2xl z-[51] border border-gray-700 backdrop-blur-sm bg-opacity-90 w-[200px]"
 				style={{
 					left: `${infoBoxPosition.left}px`,
 					top: `${infoBoxPosition.top}px`,

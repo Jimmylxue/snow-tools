@@ -20,7 +20,13 @@ export function HoverCapturer() {
 	return (
 		customData &&
 		windowId && (
-			<div className="w-full h-full flex items-center justify-center">
+			<div
+				className="w-full h-full flex items-center justify-center"
+				onWheel={e => {
+					const isScrollDown = e.deltaY > 0
+					ipc.send(`WINDOW-RESIZE-${windowId}`, isScrollDown)
+				}}
+			>
 				{/* 增加内边距给阴影留空间 */}
 				{/* 阴影层 (蓝色发光效果) */}
 				<div

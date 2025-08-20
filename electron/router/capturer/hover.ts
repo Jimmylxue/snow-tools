@@ -66,16 +66,28 @@ class HoverWindows {
 			webPreferences: {
 				preload: path.join(__dirname, 'preload.mjs'),
 				additionalArguments: [`--window-id=${id}`],
+				// 添加以下配置改善渲染
+				backgroundThrottling: false,
+				contextIsolation: true,
+				nodeIntegration: false,
 			},
 			resizable: false,
 			frame: false,
 			alwaysOnTop: true,
 			show: false,
 			fullscreenable: false,
-			roundedCorners: true, // 需要设置为true才能显示阴影
+			roundedCorners: true,
 			width: size.width,
 			height: size.height,
-			backgroundColor: '#00000000', // 透明背景
+			// 修改背景颜色配置
+			backgroundColor: '#000000', // 改为不透明黑色
+			transparent: false, // 明确禁用透明
+			// 添加视觉样式配置
+			hasShadow: true,
+			thickFrame: false,
+			// 添加这些配置来改善渲染
+			paintWhenInitiallyHidden: false,
+			enableLargerThanScreen: false,
 		})
 
 		this.instances.set(id, {
@@ -89,7 +101,7 @@ class HoverWindows {
 			)
 			instance.webContents.send('window-init', { params })
 
-			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
+			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS !== 'true') {
 				instance?.webContents.openDevTools()
 			}
 		})
@@ -109,6 +121,61 @@ class HoverWindows {
 					height: size.height,
 				})
 			}
+		})
+
+		ipcMain.on(`WINDOW-RESIZE-${id}`, (_, isMagnify: boolean) => {
+			const hoverWindow = this.instances.get(id)
+			const instance = hoverWindow?.window
+			const { size: originalSize } = hoverWindow?.params || {
+				size: { width: 0, height: 0 },
+			}
+
+			if (!instance || !originalSize) return
+
+			// 获取当前窗口尺寸和位置
+			const [currentWidth, currentHeight] = instance.getSize()
+			const [currentX, currentY] = instance.getPosition()
+
+			// 定义缩放比例
+			const zoomFactor = 0.03
+
+			// 计算新尺寸
+			const newWidth = Math.round(
+				isMagnify
+					? currentWidth + originalSize.width * zoomFactor
+					: currentWidth - originalSize.width * zoomFactor
+			)
+			const newHeight = Math.round(
+				isMagnify
+					? currentHeight + originalSize.height * zoomFactor
+					: currentHeight - originalSize.height * zoomFactor
+			)
+
+			if (!isMagnify && (newWidth < 50 || newHeight < 50)) {
+				return
+			}
+
+			// 计算中心点位置
+			const centerX = currentX + currentWidth / 2
+			const centerY = currentY + currentHeight / 2
+
+			// 计算新位置（保持中心点不变）
+			const newX = Math.round(centerX - newWidth / 2)
+			const newY = Math.round(centerY - newHeight / 2)
+
+			// 设置新尺寸和位置
+			instance.setSize(newWidth, newHeight)
+			instance.setPosition(newX, newY)
+
+			// Windows特殊处理
+			// if (!is_mac) {
+			// 	instance.setBounds({
+			// 		x: newX,
+			// 		y: newY,
+			// 		width: newWidth,
+			// 		height: newHeight,
+			// 	})
+			// }
 		})
 
 		const menu = Menu.buildFromTemplate([

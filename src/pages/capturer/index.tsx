@@ -16,10 +16,13 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import { getIpc } from '@/hooks/ipc'
 import { SelectionSize } from './components/SelectionSize'
+import { drawCanvasImage } from './utils/canvas'
+import { getScaledPosition } from './utils/utils'
 
 const ipc = getIpc()
 
 export function Capturer() {
+	/** 截图的 图片资源 */
 	const [source, setSource] = useState<TCapturerMessage>()
 	const [isSelecting, setIsSelecting] = useState(false)
 	const [selection, setSelection] = useState<SelectionRect | null>(null)
@@ -37,7 +40,9 @@ export function Capturer() {
 		color: string
 		width: number
 	} | null>(null)
+	/** 画笔颜色 */
 	const [drawColor, setDrawColor] = useState('#ff0000')
+	/** 画笔宽度 */
 	const [drawWidth, setDrawWidth] = useState(3)
 
 	const visibleCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -61,7 +66,7 @@ export function Capturer() {
 			ipc.send('CAPTURE_LOG', 'USE EFFECT GET TRIGGER')
 			setSource(content)
 		})
-	}, [capturerObserve])
+	}, [])
 
 	useEffect(() => {
 		return capturerCloseObserve.subscribe(() => {
@@ -101,25 +106,11 @@ export function Capturer() {
 		img.src = source.source
 	}, [source, startRegionSelection])
 
-	const getScaledPosition = useCallback((e: React.MouseEvent) => {
-		if (!visibleCanvasRef.current) return { x: 0, y: 0 }
-
-		const canvas = visibleCanvasRef.current
-		const rect = canvas.getBoundingClientRect()
-		const scaleX = canvas.width / rect.width
-		const scaleY = canvas.height / rect.height
-
-		return {
-			x: (e.clientX - rect.left) * scaleX,
-			y: (e.clientY - rect.top) * scaleY,
-		}
-	}, [])
-
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
 			if (!isSelecting) return
 
-			const { x, y } = getScaledPosition(e)
+			const { x, y } = getScaledPosition(e, visibleCanvasRef.current)
 
 			if (activeTool === 'select') {
 				if (showTools) return
@@ -144,21 +135,14 @@ export function Capturer() {
 				})
 			}
 		},
-		[
-			isSelecting,
-			activeTool,
-			showTools,
-			getScaledPosition,
-			drawColor,
-			drawWidth,
-		]
+		[isSelecting, activeTool, showTools, drawColor, drawWidth]
 	)
 
 	const handleMouseMove = useCallback(
 		(e: React.MouseEvent) => {
 			if (!visibleCanvasRef.current) return
 
-			const { x, y } = getScaledPosition(e)
+			const { x, y } = getScaledPosition(e, visibleCanvasRef.current)
 			setCurrentMouseInfo({ e, x, y })
 
 			if (selection && activeTool === 'select' && !showTools) {
@@ -182,7 +166,6 @@ export function Capturer() {
 			currentDrawing,
 			currentRectangle,
 			showTools,
-			getScaledPosition,
 		]
 	)
 
@@ -194,7 +177,7 @@ export function Capturer() {
 
 			if (width > 10 && height > 10) {
 				setShowTools(true)
-				setActiveTool('draw')
+				setActiveTool('rect')
 			} else {
 				setSelection(null)
 			}
@@ -260,10 +243,8 @@ export function Capturer() {
 			} else {
 				sendCaptureSave(params)
 			}
-
-			// setSource(undefined)
 		},
-		[selection]
+		[selection, source]
 	)
 
 	const saveScreenshot = useCallback(() => {
@@ -288,103 +269,15 @@ export function Capturer() {
 		if (!visibleCanvasRef.current || !source || !backgroundImage) return
 
 		const canvas = visibleCanvasRef.current
-		const ctx = canvas.getContext('2d')!
-		ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-		// 1. 首先绘制原始图像
-		ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
-
-		// 2. 如果有选区，处理变暗效果
-		if (selection) {
-			ctx.save()
-
-			const { start, end } = selection
-			const x = Math.min(start.x, end.x)
-			const y = Math.min(start.y, end.y)
-			const width = Math.abs(end.x - start.x)
-			const height = Math.abs(end.y - start.y)
-
-			// 3. 创建变暗效果（选区外的区域）
-			// 3.1 绘制整个画布变暗
-			ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-			ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-			// 3.2 使用合成模式恢复选区内的亮度
-			ctx.globalCompositeOperation = 'destination-out'
-			ctx.fillRect(x, y, width, height)
-
-			// 4. 恢复合成模式并绘制选区边框
-			ctx.globalCompositeOperation = 'source-over'
-			ctx.strokeStyle = 'red'
-			ctx.lineWidth = 2
-			ctx.setLineDash([5, 5])
-			ctx.strokeRect(x, y, width, height)
-			ctx.setLineDash([])
-
-			ctx.restore()
-
-			// 5. 重新绘制选区内的原始图像（保持亮度）
-			ctx.save()
-			ctx.beginPath()
-			ctx.rect(x, y, width, height)
-			ctx.closePath()
-			ctx.clip()
-			ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height)
-			ctx.restore()
-		}
-
-		// 绘制所有已保存的矩形
-		rectangles.forEach(rect => {
-			const x = Math.min(rect.start.x, rect.end.x)
-			const y = Math.min(rect.start.y, rect.end.y)
-			const width = Math.abs(rect.end.x - rect.start.x)
-			const height = Math.abs(rect.end.y - rect.start.y)
-
-			ctx.strokeStyle = rect.color
-			ctx.lineWidth = rect.width
-			ctx.strokeRect(x, y, width, height)
-		})
-
-		// 绘制当前正在绘制的矩形
-		if (currentRectangle) {
-			const x = Math.min(currentRectangle.start.x, currentRectangle.end.x)
-			const y = Math.min(currentRectangle.start.y, currentRectangle.end.y)
-			const width = Math.abs(currentRectangle.end.x - currentRectangle.start.x)
-			const height = Math.abs(currentRectangle.end.y - currentRectangle.start.y)
-
-			ctx.strokeStyle = currentRectangle.color
-			ctx.lineWidth = currentRectangle.width
-			ctx.strokeRect(x, y, width, height)
-		}
-
-		// 绘制所有已保存的绘画（保持不变）
-		drawings.forEach(drawing => {
-			if (drawing.path.length < 2) return
-			ctx.strokeStyle = drawing.color
-			ctx.lineWidth = drawing.width
-			ctx.lineJoin = 'round'
-			ctx.lineCap = 'round'
-			ctx.beginPath()
-			ctx.moveTo(drawing.path[0].x, drawing.path[0].y)
-			for (let i = 1; i < drawing.path.length; i++) {
-				ctx.lineTo(drawing.path[i].x, drawing.path[i].y)
-			}
-			ctx.stroke()
-		})
-
-		// 绘制当前正在进行的绘画（保持不变）
-		if (currentDrawing && currentDrawing.path.length >= 2) {
-			ctx.strokeStyle = currentDrawing.color
-			ctx.lineWidth = currentDrawing.width
-			ctx.lineJoin = 'round'
-			ctx.lineCap = 'round'
-			ctx.beginPath()
-			ctx.moveTo(currentDrawing.path[0].x, currentDrawing.path[0].y)
-			for (let i = 1; i < currentDrawing.path.length; i++) {
-				ctx.lineTo(currentDrawing.path[i].x, currentDrawing.path[i].y)
-			}
-			ctx.stroke()
-		}
+		drawCanvasImage(
+			canvas,
+			backgroundImage,
+			rectangles,
+			selection,
+			currentRectangle,
+			drawings,
+			currentDrawing
+		)
 	}, [
 		source,
 		selection,

@@ -26,7 +26,7 @@ export function SelectionBorder({ selection, showTools, canvas }: TProps) {
 			top: `${top}px`,
 			width: `${width}px`,
 			height: `${height}px`,
-			border: showTools ? '2px solid red' : '2px dashed red',
+			border: showTools ? 'none' : '2px dashed red',
 			// backgroundColor: 'rgba(255, 255, 255, 0.3)',
 			pointerEvents: 'none' as const,
 		}

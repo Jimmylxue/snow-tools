@@ -129,18 +129,6 @@ export function ToolBar({
 				<button
 					className={`px-3 h-9 rounded-md text-sm font-medium transition-all
             ${
-							activeState === 'draw'
-								? 'bg-[#1E90FF] text-white'
-								: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
-						}`}
-					onClick={() => onTriggerEvent('DRAW')}
-				>
-					涂鸦
-				</button>
-
-				<button
-					className={`px-3 h-9 rounded-md text-sm font-medium transition-all
-            ${
 							activeState === 'rect'
 								? 'bg-[#1E90FF] text-white'
 								: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
@@ -149,7 +137,17 @@ export function ToolBar({
 				>
 					框选
 				</button>
-
+				<button
+					className={`px-3 h-9 rounded-md text-sm font-medium transition-all
+            ${
+							activeState === 'draw'
+								? 'bg-[#1E90FF] text-white'
+								: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
+						}`}
+					onClick={() => onTriggerEvent('DRAW')}
+				>
+					涂鸦
+				</button>
 				{/* 分隔线 */}
 				<div className="h-6 w-px bg-[#3D3D3D] mx-1"></div>
 			</div>
