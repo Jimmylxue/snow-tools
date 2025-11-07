@@ -31,7 +31,10 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 		return ipcRenderer.invoke('open-external', url)
 	},
 
-	getInstalledApps: () => {
-		return ipcRenderer.invoke('getInstalledApps')
-	},
+	/**
+	 * 不重要的功能 先下线
+	 */
+	// getInstalledApps: () => {
+	// 	return ipcRenderer.invoke('getInstalledApps')
+	// },
 })

@@ -14,7 +14,7 @@ export const SnowTools = () => {
 	const [selectedIndex, setSelectedIndex] = useState(0)
 	const gridRef = useRef(null)
 
-	const { apps } = useApps()
+	// const { apps } = useApps()
 
 	const searchResult = useMemo(() => {
 		if (!input.trim()) {
@@ -22,16 +22,16 @@ export const SnowTools = () => {
 		}
 		const inputText = input.toUpperCase()
 
-		const filterApps = apps.filter(item => {
-			const appName = item.appName.toUpperCase()
-			return appName.includes(inputText)
-		})
+		// const filterApps = apps.filter(item => {
+		// 	const appName = item.appName.toUpperCase()
+		// 	return appName.includes(inputText)
+		// })
 		const filterTools = allTools.filter(item => {
 			const toolName = item.name?.toUpperCase()
 			return toolName.includes(inputText)
 		})
-		return [...filterApps, ...filterTools]
-	}, [input, apps])
+		return [...filterTools]
+	}, [input])
 
 	useEffect(() => {
 		const isShowSearchResult = input?.trim() !== ''

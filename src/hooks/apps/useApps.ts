@@ -7,11 +7,11 @@ const ipc = getIpc()
 export function useApps() {
 	const [apps, setApps] = useState<TApp[]>([])
 
-	useEffect(() => {
-		ipc.getInstalledApps().then((apps: TApp[]) => {
-			setApps(apps)
-		})
-	}, [])
+	// useEffect(() => {
+	// 	ipc.getInstalledApps().then((apps: TApp[]) => {
+	// 		setApps(apps)
+	// 	})
+	// }, [])
 
 	return { apps }
 }

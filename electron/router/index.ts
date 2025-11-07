@@ -10,6 +10,7 @@ import { translateWindow } from './translate'
 import { gitmojiWindow } from './gitmoji'
 import { clipboardWindow } from './clipboard'
 import { settingWindow } from './setting'
+import { initWindowsApps } from '../biz/apps/core/win'
 
 export function initRouter() {
 	mainWindow.create()
@@ -31,7 +32,8 @@ export function initRouter() {
 		clipboard: clipboardWindow,
 	})
 
-	initApps()
+	// initApps()
+	// initWindowsApps()
 
 	registerGlobalShortCut()
 
