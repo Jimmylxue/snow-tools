@@ -11,6 +11,7 @@ import { Clipboard } from './pages/clipboard'
 import { useEffect } from 'react'
 import { sendNavigateBack } from './hooks/ipc/window'
 import { SystemSetting } from './pages/setting'
+import { ImageHosting } from './pages/imageHosting'
 
 function App() {
 	useClipBoardChange()
@@ -37,6 +38,7 @@ function App() {
 				<Route path="/gitmoji" element={<GitMoji />} />
 				<Route path="/clipboard" element={<Clipboard />} />
 				<Route path="/setting" element={<SystemSetting />} />
+				<Route path="/imageHosting" element={<ImageHosting />} />
 				<Route
 					path="*"
 					element={

@@ -9,6 +9,7 @@ export type TRouterPage =
 	| 'translate'
 	| 'gitmoji'
 	| 'clipboard'
+	| 'imageHosting'
 
 type TRouterMap = {
 	[key in TRouterPage]: TWindows
@@ -25,6 +26,7 @@ export class TNavigation {
 	screenStack: BrowserWindow[] = []
 
 	currentRouter: TRouterPage = 'base'
+	// currentRouter: TRouterPage = 'imageHosting'
 
 	constructor() {}
 
@@ -38,6 +40,8 @@ export class TNavigation {
 
 	register(_routerMap: TRouterMap) {
 		this.routerMap = _routerMap
+
+		this.routerMap[this.currentRouter].show()
 	}
 
 	replace(routerName: TRouterPage) {

@@ -1,5 +1,4 @@
 import { registerGlobalShortCut } from '../config/shortcut'
-import { initApps } from '../biz/apps'
 import { appTray } from '../config/tray'
 import { aboutWindow } from './about'
 import { capturerWindow } from './capturer'
@@ -10,7 +9,7 @@ import { translateWindow } from './translate'
 import { gitmojiWindow } from './gitmoji'
 import { clipboardWindow } from './clipboard'
 import { settingWindow } from './setting'
-import { initWindowsApps } from '../biz/apps/core/win'
+import { imageHostingWindow } from './imageHosting'
 
 export function initRouter() {
 	mainWindow.create()
@@ -20,6 +19,7 @@ export function initRouter() {
 	gitmojiWindow.create()
 	clipboardWindow.create()
 	settingWindow.create()
+	imageHostingWindow.create()
 
 	appTray.initTray(mainWindow.instance!)
 	navigate.register({
@@ -30,10 +30,8 @@ export function initRouter() {
 		translate: translateWindow,
 		gitmoji: gitmojiWindow,
 		clipboard: clipboardWindow,
+		imageHosting: imageHostingWindow,
 	})
-
-	// initApps()
-	// initWindowsApps()
 
 	registerGlobalShortCut()
 
