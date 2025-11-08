@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.1](https://github.com/Jimmylxue/snow-tools/compare/v0.0.4...v0.1.1) (2025-11-08)
+
+
+### Features
+
+* 更新env文件&关于页面logo更新 ([95f618b](https://github.com/Jimmylxue/snow-tools/commit/95f618b3e06455ff936bddc435438d0c1a3cc2af))
+* 关于页面窗口更新 ([8ac6ea8](https://github.com/Jimmylxue/snow-tools/commit/8ac6ea8e7cd1ee08952b3c66f3b6453d332b1ed8))
+* 默认input页面支持指令全量展示 ([4939569](https://github.com/Jimmylxue/snow-tools/commit/493956938bac83a08f926c85a01f0d5a69676746))
+* 设计风格V2版本更新 ([d14a885](https://github.com/Jimmylxue/snow-tools/commit/d14a8858a2f5d243e85d8c7406728de183bee15d))
+* 图床版本功能开发完成 ([e18b6fe](https://github.com/Jimmylxue/snow-tools/commit/e18b6fe68272a18b04f106969f60d15c145381ea))
+* 新增 clipboard 无权限时手动获取权限 ([1e6d66d](https://github.com/Jimmylxue/snow-tools/commit/1e6d66df20685ca32f62bb1ac6c993c6ad3d8b34))
+* 新增软件 关于 信息界面 ([411a7a7](https://github.com/Jimmylxue/snow-tools/commit/411a7a722185309bab176648b566e190ac3fe866))
+* 优化获取中文App名称 ([1c80ee6](https://github.com/Jimmylxue/snow-tools/commit/1c80ee6452d5e3de0bd4a1839def6ae116fff0a5))
+* 优化快捷键开启关闭展示逻辑 ([fc4bb48](https://github.com/Jimmylxue/snow-tools/commit/fc4bb482214aae0bd76a3d4e595f6a7047610009))
+* 支持输入大小写字符匹配App名 支持打开App名 ([5eb7137](https://github.com/Jimmylxue/snow-tools/commit/5eb71379628768ee21738484a80f0390f7131d25))
+* capturer 新增 rect框选 ([bd65164](https://github.com/Jimmylxue/snow-tools/commit/bd65164e8f9bba3745091179f17f6490967bc028))
+* capturer 新增框选区域尺寸展示 ([bf8798b](https://github.com/Jimmylxue/snow-tools/commit/bf8798b0cd8e67548dc6ac9d30ba5c9e1886c373))
+* capturer支持滚动缩放漂浮窗口 ([752ccdb](https://github.com/Jimmylxue/snow-tools/commit/752ccdb518d7b8c18060c0ba7a17c4a7e792db64))
+* commandItem 支持click事件与展示快捷指令 ([622a66b](https://github.com/Jimmylxue/snow-tools/commit/622a66b1ba2c808a359dc44fd39eed69fe35e75e))
+
+
+### Bug Fixes
+
+* 修复框选问题修复 ([05deb7a](https://github.com/Jimmylxue/snow-tools/commit/05deb7ad9fcc92c23e89bb85be75a0bc3027386b))
+* 修复首页图片展示异常修复 ([aadff3f](https://github.com/Jimmylxue/snow-tools/commit/aadff3f48e59edb1d0e3433ba643d3a693f69dff))
+* clipboard 获取值时延迟问题处理修复 与 mac端clipboard重新获取时再次监听 ([a346d24](https://github.com/Jimmylxue/snow-tools/commit/a346d24aaf5ac07cce95d499ceb3085302539b26))
+
 ### [0.0.5](https://github.com/Jimmylxue/snow-tools/compare/v0.0.4...v0.0.5) (2025-11-08)
 
 
