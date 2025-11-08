@@ -7,6 +7,7 @@ enum ESCREEN_SIZE {
 	翻译页面 = 'TRANSLATE',
 	GITMOJI页面 = 'GITMOJI',
 	关于页面 = 'ABOUT',
+	图床页面 = 'IMAGE_HOSTING',
 }
 
 export type T_SCREEN_SIZE_TYPE = `${ESCREEN_SIZE}`

@@ -27,8 +27,7 @@ export const useTranslateV2 = (
 ) => {
 	return useMutation<TBaiduFanyi, ClientError, TRequestParams>({
 		mutationFn: async data => {
-			const response: any = await post('translate/base', data)
-			return response
+			return await post('translate/base', data)
 		},
 		...config,
 	})

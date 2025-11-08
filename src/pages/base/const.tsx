@@ -4,6 +4,7 @@ import GitmojiPng from '@/assets/img/tool-gitmoji.png'
 import CapturePng from '@/assets/img/tool-capturer.png'
 import ClipboardPng from '@/assets/img/tool-clipboard.png'
 import SettingPng from '@/assets/img/tool-setting.png'
+import ImageHostingPng from '@/assets/img/tool-imageHosting.png'
 
 export const allTools: TTools[] = [
 	{
@@ -37,6 +38,14 @@ export const allTools: TTools[] = [
 		recommended: false,
 		iconUrl: ClipboardPng,
 		routerName: 'clipboard',
+	},
+	{
+		id: 4,
+		name: '图床',
+		icon: '🎨',
+		recommended: false,
+		iconUrl: ImageHostingPng,
+		routerName: 'imageHosting',
 	},
 	{
 		id: 1,

@@ -50,8 +50,6 @@ class MainWindow implements TWindows {
 			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
 				this.instance?.webContents.openDevTools()
 			}
-			this.show()
-			// screenEvent(this.instance!)
 			if (!is_mac) {
 				initClipboard(this.instance!)
 			} else {

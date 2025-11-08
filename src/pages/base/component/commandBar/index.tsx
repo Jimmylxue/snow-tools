@@ -1,4 +1,3 @@
-import { useApps } from '@/hooks/apps/useApps'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { allTools } from '../../const'
 import { SearchResult } from '../SearchResult'
