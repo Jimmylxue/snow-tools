@@ -1,7 +1,7 @@
 {
   "name": "snow-tool",
   "private": true,
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "scripts": {
     "prebuild": "cd electron/modules/nsevent-listener && pnpm complie",
