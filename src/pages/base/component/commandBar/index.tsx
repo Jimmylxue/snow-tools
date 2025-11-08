@@ -74,7 +74,7 @@ export const SnowTools = () => {
 	}, [selectedIndex, input])
 
 	return (
-		<div className="flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200 w-[700px] h-[400px]">
+		<div className="h-screen flex flex-col bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200 w-[700px]">
 			{/* Search bar - 改进后的设计 */}
 			<div className="p-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-gray-50">
 				<div className="flex items-center space-x-3">

@@ -1,3 +1,4 @@
+import LogoPng from '@/assets/img/logo.png'
 import { getIpc } from '@/hooks/ipc'
 import { Github } from 'lucide-react'
 
@@ -17,7 +18,7 @@ export function About() {
 				{/* Logo和标题 */}
 				<div className="flex flex-col items-center mb-5">
 					<div className="w-16 h-16 bg-white rounded-xl shadow-sm  flex items-center justify-center mb-3">
-						<img src="/logo.png" alt="" />
+						<img src={LogoPng} alt="" />
 					</div>
 					<h1 className="text-xl font-semibold text-gray-800">Snow Tools</h1>
 					<p className="text-xs text-gray-400 mt-1">
