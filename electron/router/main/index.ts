@@ -89,6 +89,11 @@ class MainWindow implements TWindows {
 	}
 
 	show() {
+		const { x, y } = getCenterPositionBoundByRouter(this.routerName)
+		this.instance?.setBounds({
+			x,
+			y,
+		})
 		this.instance?.setOpacity(1)
 		// 设置窗口位置并显示
 		this.instance?.setVisibleOnAllWorkspaces(true, {

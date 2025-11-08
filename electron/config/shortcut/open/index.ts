@@ -36,11 +36,11 @@ class OpenShortCut implements TShortCut {
 			globalShortcut.unregister(this.currentHotKey)
 		}
 
-		const openWindow = navigate.routerMap!.base
-		const openWindowInstance = openWindow.instance!
 		try {
 			// 注册新的热键
 			globalShortcut.register(hotkey, () => {
+				const openWindow = navigate.routerMap![navigate.currentRouter]
+				const openWindowInstance = openWindow.instance!
 				if (openWindowInstance?.isVisible()) {
 					if (this.isEditingHotKey) return
 					openWindowInstance?.setOpacity(0)
@@ -49,13 +49,12 @@ class OpenShortCut implements TShortCut {
 					openWindow.show()
 				}
 			})
-
 			this.currentHotKey = hotkey
 			console.log(`Hotkey updated to: ${hotkey}`)
 		} catch (error) {
 			console.error('Failed to register hotkey:', error)
 			// 可以在这里通知渲染进程注册失败
-			openWindowInstance?.webContents.send('hotkey-register-failed', hotkey)
+			// openWindowInstance?.webContents.send('hotkey-register-failed', hotkey)
 		}
 	}
 

@@ -76,6 +76,7 @@ class TranslateWindow implements TWindows {
 			visibleOnFullScreen: true,
 			skipTransformProcessType: true,
 		})
+		this.instance?.setOpacity(1)
 		this.instance?.show()
 		this.instance?.focus()
 	}
