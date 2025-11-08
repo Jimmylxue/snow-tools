@@ -9,7 +9,7 @@ export function About() {
 		ipc.openExternal(url)
 	}
 	return (
-		<div className="w-[500px] h-screen bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden border border-gray-100 flex flex-col">
+		<div className="w-screen h-screen bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden border border-gray-100 flex flex-col">
 			{/* 顶部渐变装饰条 */}
 			{/* <div className="h-2 bg-gradient-to-r from-blue-400 to-purple-500"></div> */}
 

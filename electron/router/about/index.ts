@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
-import { VITE_DEV_SERVER_URL, RENDERER_DIST } from '../../main'
+import { VITE_DEV_SERVER_URL, RENDERER_DIST, is_mac } from '../../main'
 import { ABOUT_SCREEN_SIZE, T_SCREEN_SIZE_TYPE } from '../../ipc/screen'
 import { getCenterPositionBoundByRouter } from '../../utils/display'
 
@@ -34,6 +34,7 @@ class AboutWindow implements TWindows {
 			height: ABOUT_SCREEN_SIZE.height,
 			x,
 			y,
+			...(is_mac ? {} : { titleBarStyle: 'hidden', titleBarOverlay: true }),
 		})
 
 		// Test active push message to Renderer-process.
