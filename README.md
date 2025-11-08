@@ -15,7 +15,7 @@
 
 **snow-tools** 是一款专为开发者设计的轻量级效率工具集，旨在帮助程序员提高日常开发效率。它提供了翻译、Gitmoji 快速查找等实用功能，让开发工作更加顺畅。
 
-​	![image-20251108123017541](https://image.jimmyxuexue.top/img/image-20251108123017541.png)
+<img width="2940" height="1836" alt="image" src="https://github.com/user-attachments/assets/e7fa8b74-8a15-4319-ab67-6d7a7344be49" />
 
 https://github.com/user-attachments/assets/34a5f217-7ece-4ea1-b136-8eef449a0031
 
@@ -35,8 +35,7 @@ https://github.com/user-attachments/assets/34a5f217-7ece-4ea1-b136-8eef449a0031
 - **translate**: 快捷翻译
   <img width="1920" alt="image" src="https://github.com/user-attachments/assets/3535e020-540e-4182-9205-577719a2d04f" />
 - 图床
-  
-  ![image-20251108122845092](https://image.jimmyxuexue.top/img/image-20251108122845092.png)
+  <img width="2940" height="1836" alt="image" src="https://github.com/user-attachments/assets/bf3d4147-0fa5-42ce-b04b-7de73f8e5372" />
 - **gitmoji**: giimoji快捷选取
   <img width="1920" alt="image" src="https://github.com/user-attachments/assets/d2aeaf81-d788-413f-80fb-f50b5ab509f2" />
 - **clipboard**: 系统级别剪切板，随时随地查看复制的内容
@@ -94,4 +93,5 @@ https://github.com/user-attachments/assets/34a5f217-7ece-4ea1-b136-8eef449a0031
 
 - 组件库：[shadcn](https://ui.shadcn.com/docs/installation)
 - icon：[lucide-react](https://lucide.dev/guide/packages/lucide-react)
+
 
