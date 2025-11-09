@@ -21,7 +21,7 @@ export function HoverCapturer() {
 		customData &&
 		windowId && (
 			<div
-				className="w-full h-full flex items-center justify-center"
+				className=" w-screen h-screen flex items-center justify-center"
 				onWheel={e => {
 					const isScrollDown = e.deltaY > 0
 					ipc.send(`WINDOW-RESIZE-${windowId}`, isScrollDown)
