@@ -98,7 +98,7 @@ export function Capturer() {
 			visibleCanvas.height = img.naturalHeight
 			visibleCanvas.style.width = `${img.naturalWidth / source.scaleFactor}px`
 			visibleCanvas.style.height = `${img.naturalHeight / source.scaleFactor}px`
-			const visibleCtx = visibleCanvas.getContext('2d')!
+			const visibleCtx = visibleCanvas.getContext('2d', { colorSpace: 'display-p3' })!
 			visibleCtx.drawImage(img, 0, 0)
 			ipc.send('SHOW_CAPTURER_SCREEN')
 			startRegionSelection()
@@ -209,7 +209,7 @@ export function Capturer() {
 
 			const canvas = visibleCanvasRef.current
 			const outputCanvas = document.createElement('canvas')
-			const ctx = outputCanvas.getContext('2d', { willReadFrequently: true })!
+			const ctx = outputCanvas.getContext('2d', { willReadFrequently: true, colorSpace: 'display-p3' })!
 			ctx.imageSmoothingEnabled = false
 
 			const { start, end } = selection
