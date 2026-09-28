@@ -48,12 +48,13 @@ export function SelectionSize({ selection, containerRect, source }: TProps) {
 			top,
 		}
 	}, [containerRect, selection, source, margin, sizeHeight])
-	console.log('computed', computed)
+
 	return (
 		<div
 			id="dzs"
-			className={` absolute text-white text-xs bg-gray-800 px-2 min-w-[100px] rounded-md h-[${sizeHeight}px] flex items-center`}
+			className="absolute flex items-center min-w-[100px] rounded-md bg-gray-800 px-2 text-xs text-white"
 			style={{
+				height: `${sizeHeight}px`,
 				left: `${computed?.left ?? -9999}px`,
 				top: `${computed?.top ?? -9999}px`,
 			}}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { TAbsolutePosition, TCurrentMouseInfo } from '../type'
 import { capturerCloseObserve } from '../oberver'
 
@@ -10,9 +10,9 @@ type TProps = {
 export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 	const [infoBoxPosition, setInfoBoxPosition] = useState<TAbsolutePosition>()
 	const [pixelColor, setPixelColor] = useState<string>()
-	const [zoomArea, setZoomArea] = useState<string>('')
 	const [colorFormat, setColorFormat] = useState<'rgb' | 'hex'>('rgb')
 	const [showHint, setShowHint] = useState(false)
+	const zoomCanvasRef = useRef<HTMLCanvasElement>(null)
 
 	// 转换颜色格式
 	const formatColor = useCallback(
@@ -59,19 +59,14 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 	// 创建放大区域
 	const createZoomArea = useCallback(
 		(x: number, y: number, ctx: CanvasRenderingContext2D) => {
+			const zoomCanvas = zoomCanvasRef.current
+			if (!zoomCanvas) return
+
 			const zoomSize = 100
 			const zoomFactor = 5
 			const zoomX = Math.max(0, x - zoomSize / (2 * zoomFactor))
 			const zoomY = Math.max(0, y - zoomSize / (2 * zoomFactor))
 
-			ctx.getImageData(
-				zoomX,
-				zoomY,
-				zoomSize / zoomFactor,
-				zoomSize / zoomFactor
-			)
-
-			const zoomCanvas = document.createElement('canvas')
 			zoomCanvas.width = zoomSize
 			zoomCanvas.height = zoomSize
 			const zoomCtx = zoomCanvas.getContext('2d')!
@@ -97,8 +92,6 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 			zoomCtx.moveTo(0, zoomSize / 2)
 			zoomCtx.lineTo(zoomSize, zoomSize / 2)
 			zoomCtx.stroke()
-
-			setZoomArea(zoomCanvas.toDataURL())
 		},
 		[]
 	)
@@ -122,28 +115,28 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 	// 更新鼠标信息和位置
 	useEffect(() => {
 		if (currentMouseInfo && visibleCanvasRef) {
-			const { e, x, y } = currentMouseInfo
+			const { clientX, clientY, x, y } = currentMouseInfo
 			const canvas = visibleCanvasRef
 			const offset = 15
 			const infoBoxWidth = 190
-			const infoBoxHeight = zoomArea ? 200 : 60
+			const infoBoxHeight = 200
 
 			// 计算可用空间
-			const spaceRight = window.innerWidth - e.clientX
-			const spaceBottom = window.innerHeight - e.clientY
+			const spaceRight = window.innerWidth - clientX
+			const spaceBottom = window.innerHeight - clientY
 
 			// 确定信息框位置
-			let left = e.clientX + offset
-			let top = e.clientY + offset
+			let left = clientX + offset
+			let top = clientY + offset
 
 			// 如果右侧空间不足，向左显示
 			if (spaceRight < infoBoxWidth) {
-				left = e.clientX - offset - infoBoxWidth
+				left = clientX - offset - infoBoxWidth
 			}
 
 			// 如果底部空间不足，向上显示
 			if (spaceBottom < infoBoxHeight) {
-				top = e.clientY - offset - infoBoxHeight
+				top = clientY - offset - infoBoxHeight
 			}
 
 			// 确保不会超出屏幕左侧和顶部
@@ -155,18 +148,20 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 			// 获取像素颜色和创建放大区域
 			const ctx = canvas.getContext('2d')
 			if (ctx) {
-				const pixel = ctx.getImageData(x, y, 1, 1).data
+				const pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data
 				setPixelColor(`rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`)
 				createZoomArea(x, y, ctx)
 			}
 		}
-	}, [currentMouseInfo, visibleCanvasRef, createZoomArea, zoomArea])
+	}, [currentMouseInfo, visibleCanvasRef, createZoomArea])
 
 	useEffect(() => {
 		return capturerCloseObserve.subscribe(() => {
 			setShowHint(false)
 			setPixelColor(undefined)
 			setInfoBoxPosition(undefined)
+			const zoomCtx = zoomCanvasRef.current?.getContext('2d')
+			zoomCtx?.clearRect(0, 0, zoomCanvasRef.current!.width, zoomCanvasRef.current!.height)
 		})
 	}, [])
 
@@ -174,7 +169,7 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 		pixelColor &&
 		infoBoxPosition && (
 			<div
-				className="fixed flex flex-col p-3 bg-[#2C2C2C] rounded-lg shadow-2xl z-[51] border border-gray-700 backdrop-blur-sm bg-opacity-90 w-[200px]"
+				className="fixed flex flex-col p-3 bg-[#2C2C2C] rounded-lg shadow-2xl z-[51] border border-gray-700 backdrop-blur-sm bg-opacity-90 w-[200px] pointer-events-none"
 				style={{
 					left: `${infoBoxPosition.left}px`,
 					top: `${infoBoxPosition.top}px`,
@@ -210,27 +205,26 @@ export function PixelColor({ currentMouseInfo, visibleCanvasRef }: TProps) {
 				)}
 
 				{/* 放大区域 */}
-				{zoomArea && (
-					<div className="relative">
-						{/* 十字准星效果 */}
-						<div
-							className="absolute inset-0 border-2 border-blue-400 pointer-events-none"
-							style={{
-								width: '100%',
-								height: '100%',
-								boxSizing: 'border-box',
-							}}
-						/>
-						<div className="absolute top-1/2 left-0 right-0 h-px bg-blue-400 opacity-50 transform -translate-y-1/2"></div>
-						<div className="absolute left-1/2 top-0 bottom-0 w-px bg-blue-400 opacity-50 transform -translate-x-1/2"></div>
+				<div className="relative">
+					{/* 十字准星效果 */}
+					<div
+						className="absolute inset-0 border-2 border-blue-400 pointer-events-none"
+						style={{
+							width: '100%',
+							height: '100%',
+							boxSizing: 'border-box',
+						}}
+					/>
+					<div className="absolute top-1/2 left-0 right-0 h-px bg-blue-400 opacity-50 transform -translate-y-1/2"></div>
+					<div className="absolute left-1/2 top-0 bottom-0 w-px bg-blue-400 opacity-50 transform -translate-x-1/2"></div>
 
-						<img
-							src={zoomArea}
-							alt="放大区域"
-							className="w-full h-auto rounded border border-gray-700"
-						/>
-					</div>
-				)}
+					<canvas
+						ref={zoomCanvasRef}
+						width={100}
+						height={100}
+						className="w-full h-auto rounded border border-gray-700"
+					/>
+				</div>
 			</div>
 		)
 	)

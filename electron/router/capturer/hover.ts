@@ -79,13 +79,11 @@ class HoverWindows {
 			roundedCorners: true,
 			width: size.width,
 			height: size.height,
-			// 修改背景颜色配置
-			backgroundColor: '#000000', // 改为不透明黑色
-			transparent: false, // 明确禁用透明
-			// 添加视觉样式配置
+			// 渲染层按 18px 圆角裁图，窗口必须真透明，否则圆角外会露出窗口底色形成黑角
+			backgroundColor: '#00000000',
+			transparent: true,
 			hasShadow: true,
 			thickFrame: false,
-			// 添加这些配置来改善渲染
 			paintWhenInitiallyHidden: false,
 			enableLargerThanScreen: false,
 		})

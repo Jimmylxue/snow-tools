@@ -1,25 +1,43 @@
 import { TApp } from 'electron/biz/apps/type'
-import { TTools } from '../../type'
-import { STool } from '../STool'
-import { SApp } from '../SApp'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { getIpc } from '@/hooks/ipc'
 import { sendOpenApp, sendRouterNavigate } from '@/hooks/ipc/window'
+import { TTools } from '../../type'
+import { SApp } from '../SApp'
+import { STool } from '../STool'
+
+const ipc = getIpc()
+
+const GRID_COLUMNS = 6
 
 type TProps = {
 	searchResult: (TApp | TTools)[]
 }
 
+function isApp(item: TApp | TTools): item is TApp {
+	return 'appPath' in item
+}
+
 export function SearchResult({ searchResult }: TProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0)
+	const itemRefs = useRef<Array<HTMLDivElement | null>>([])
+
+	/** 换了检索词就回到第一条，避免选中下标越界或停在无关项上 */
+	useEffect(() => {
+		setSelectedIndex(0)
+	}, [searchResult])
+
+	useEffect(() => {
+		itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest' })
+	}, [selectedIndex, searchResult])
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			const cols = 6 // Number of columns in grid
 			const totalItems = searchResult.length
 
 			if (
 				['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(
-					e.key
+					e.key,
 				)
 			) {
 				e.preventDefault()
@@ -27,28 +45,31 @@ export function SearchResult({ searchResult }: TProps) {
 
 			if (e.key === 'ArrowRight') {
 				setSelectedIndex(prev =>
-					prev % cols === cols - 1 || prev === totalItems - 1 ? prev : prev + 1
+					prev % GRID_COLUMNS === GRID_COLUMNS - 1 || prev === totalItems - 1
+						? prev
+						: prev + 1,
 				)
 			} else if (e.key === 'ArrowLeft') {
-				setSelectedIndex(prev => (prev % cols === 0 ? prev : prev - 1))
+				setSelectedIndex(prev => (prev % GRID_COLUMNS === 0 ? prev : prev - 1))
 			} else if (e.key === 'ArrowDown') {
-				const newIndex = selectedIndex + cols
-				if (newIndex < totalItems) {
-					setSelectedIndex(newIndex)
-				}
+				setSelectedIndex(prev =>
+					prev + GRID_COLUMNS < totalItems ? prev + GRID_COLUMNS : prev,
+				)
 			} else if (e.key === 'ArrowUp') {
-				const newIndex = selectedIndex - cols
-				if (newIndex >= 0) {
-					setSelectedIndex(newIndex)
-				}
-			} else if (e.key === 'Enter' && searchResult.length > 0) {
-				console.log(`Executing: ${searchResult[selectedIndex]}`)
+				setSelectedIndex(prev =>
+					prev - GRID_COLUMNS >= 0 ? prev - GRID_COLUMNS : prev,
+				)
+			} else if (e.key === 'Enter' && totalItems > 0) {
 				const selectedItem = searchResult[selectedIndex]
-				const isApp = (selectedItem as TApp).nativePath
-				if (isApp) {
-					sendOpenApp((selectedItem as TApp).originAppName)
+
+				if (!selectedItem) return
+
+				if (isApp(selectedItem)) {
+					sendOpenApp(selectedItem.appPath)
+				} else if (selectedItem.routerName === 'capturer') {
+					ipc.send('COMMAND_TRIGGER_CAPTURER')
 				} else {
-					sendRouterNavigate((selectedItem as TTools).routerName)
+					sendRouterNavigate(selectedItem.routerName)
 				}
 			}
 		}
@@ -57,29 +78,32 @@ export function SearchResult({ searchResult }: TProps) {
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [searchResult, selectedIndex])
 
+	if (searchResult.length === 0) {
+		return (
+			<div className="flex items-center justify-center h-full text-gray-400">
+				No results found
+			</div>
+		)
+	}
+
 	return (
 		<div className="p-3">
-			{searchResult.length === 0 ? (
-				<div className="flex items-center justify-center h-full text-gray-400">
-					No tools found
-				</div>
-			) : (
-				<div className="grid grid-cols-6 gap-2">
-					{searchResult.map((res, index) => {
-						const isApp = (res as TApp).nativePath
-						const isSelected = selectedIndex === index
-						return (
-							<div key={index}>
-								{isApp ? (
-									<SApp app={res as TApp} isSelected={isSelected} />
-								) : (
-									<STool stool={res as TTools} isSelected={isSelected} />
-								)}
-							</div>
-						)
-					})}
-				</div>
-			)}
+			<div className="grid grid-cols-6 gap-2">
+				{searchResult.map((res, index) => (
+					<div
+						key={`${isApp(res) ? res.appPath : res.routerName}-${index}`}
+						ref={element => {
+							itemRefs.current[index] = element
+						}}
+					>
+						{isApp(res) ? (
+							<SApp app={res} isSelected={selectedIndex === index} />
+						) : (
+							<STool stool={res} isSelected={selectedIndex === index} />
+						)}
+					</div>
+				))}
+			</div>
 		</div>
 	)
 }

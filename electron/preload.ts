@@ -1,14 +1,24 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
 // --------- Expose some API to the Renderer process ---------
+// on() 会把监听函数包一层，off() 必须拿回同一个包装函数才移得掉
+type TIpcListener = Parameters<typeof ipcRenderer.on>[1]
+
+const wrappedListeners = new WeakMap<TIpcListener, TIpcListener>()
+
 contextBridge.exposeInMainWorld('ipcRenderer', {
 	on(...args: Parameters<typeof ipcRenderer.on>) {
 		const [channel, listener] = args
-		return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+		const wrapper: TIpcListener = (event, ...rest) => listener(event, ...rest)
+		wrappedListeners.set(listener, wrapper)
+		return ipcRenderer.on(channel, wrapper)
 	},
 	off(...args: Parameters<typeof ipcRenderer.off>) {
-		const [channel, ...omit] = args
-		return ipcRenderer.off(channel, ...omit)
+		const [channel, listener] = args
+		return ipcRenderer.off(
+			channel,
+			wrappedListeners.get(listener) ?? listener,
+		)
 	},
 	send(...args: Parameters<typeof ipcRenderer.send>) {
 		const [channel, ...omit] = args
@@ -31,10 +41,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 		return ipcRenderer.invoke('open-external', url)
 	},
 
-	/**
-	 * 不重要的功能 先下线
-	 */
-	// getInstalledApps: () => {
-	// 	return ipcRenderer.invoke('getInstalledApps')
-	// },
+	getInstalledApps: () => {
+		return ipcRenderer.invoke('getInstalledApps')
+	},
 })

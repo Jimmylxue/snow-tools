@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
-import { SelectionRect, TAbsolutePosition } from '../type'
+import { useEffect, useState, useRef, type ReactNode } from 'react'
+import { Check, Pencil, Pin, Square, Trash2, Type, X } from 'lucide-react'
+import { SelectionRect, TAbsolutePosition, Tool } from '../type'
 import { TCapturerMessage } from '../oberver'
 
 type TProps = {
@@ -10,6 +11,7 @@ type TProps = {
 			| 'SELECT'
 			| 'DRAW'
 			| 'RECT'
+			| 'TEXT'
 			| 'CLEAR_DRAW'
 			| 'CANCEL'
 			| 'SAVE'
@@ -22,7 +24,79 @@ type TProps = {
 	onColorChange: (color: string) => void
 	drawWidth: number
 	onWidthChange: (width: number) => void
+	fontSize: number
+	onFontSizeChange: (size: number) => void
 	source?: TCapturerMessage
+}
+
+const TOOL_BUTTONS: Array<{
+	tool: Tool
+	title: string
+	event: 'RECT' | 'DRAW' | 'TEXT'
+	icon: ReactNode
+}> = [
+	{ tool: 'rect', title: '框选', event: 'RECT', icon: <Square className="w-4 h-4" /> },
+	{ tool: 'draw', title: '涂鸦', event: 'DRAW', icon: <Pencil className="w-4 h-4" /> },
+	{ tool: 'text', title: '文字', event: 'TEXT', icon: <Type className="w-4 h-4" /> },
+]
+
+// uTools风格的颜色选项
+const COLOR_OPTIONS = [
+	'#FF5F56',
+	'#FFBD2E',
+	'#27C93F',
+	'#1E90FF',
+	'#8957E5',
+	'#FF78CB',
+	'#000000',
+	'#9E9E9E',
+]
+
+/** 单个工具按钮占宽 32px + 4px 间距 */
+const TOOL_SLOT_WIDTH = 36
+const STYLE_PANEL_WIDTH = 176
+
+function ToolButton({
+	title,
+	active,
+	danger,
+	warning,
+	success,
+	onClick,
+	children,
+}: {
+	title: string
+	active?: boolean
+	danger?: boolean
+	warning?: boolean
+	success?: boolean
+	onClick: () => void
+	children: ReactNode
+}) {
+	const tone = active
+		? 'bg-[#1E90FF] text-white'
+		: danger
+			? 'bg-[#FF5F56] text-white hover:bg-[#FF3B30]'
+			: warning
+				? 'bg-[#FFA500] text-white hover:bg-[#EE9A00]'
+				: success
+					? 'bg-[#27C93F] text-white hover:bg-[#1DAD32]'
+					: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
+
+	return (
+		<button
+			title={title}
+			aria-label={title}
+			onClick={onClick}
+			className={`w-8 h-8 shrink-0 rounded-md flex items-center justify-center transition-all ${tone}`}
+		>
+			{children}
+		</button>
+	)
+}
+
+function Separator() {
+	return <div className="w-px h-5 shrink-0 bg-[#3D3D3D] mx-1" />
 }
 
 export function ToolBar({
@@ -35,11 +109,11 @@ export function ToolBar({
 	onColorChange,
 	drawWidth,
 	onWidthChange,
+	fontSize,
+	onFontSizeChange,
 	source,
 }: TProps) {
 	const [position, setPosition] = useState<TAbsolutePosition>()
-	const [showColorPicker, setShowColorPicker] = useState(false)
-	const [showWidthSlider, setShowWidthSlider] = useState(false)
 	const toolbarRef = useRef<HTMLDivElement>(null)
 
 	const [toolbarSize, setToolbarSize] = useState({
@@ -48,17 +122,13 @@ export function ToolBar({
 	})
 	const margin = 8
 
-	// uTools风格的颜色选项
-	const colorOptions = [
-		'#FF5F56',
-		'#FFBD2E',
-		'#27C93F',
-		'#1E90FF',
-		'#8957E5',
-		'#FF78CB',
-		'#000000',
-		'#9E9E9E',
-	]
+	/** 文字工具下同一个滑杆控制字号 */
+	const isTextMode = activeState === 'text'
+	const sizeValue = isTextMode ? fontSize : drawWidth
+	const sizeRange = isTextMode ? { min: 12, max: 48 } : { min: 1, max: 20 }
+	const activeToolIndex = TOOL_BUTTONS.findIndex(
+		item => item.tool === activeState,
+	)
 
 	// 动态计算工具栏尺寸
 	useEffect(() => {
@@ -69,7 +139,7 @@ export function ToolBar({
 				height: Math.ceil(height),
 			})
 		}
-	}, [show, showColorPicker, showWidthSlider])
+	}, [show])
 
 	// 定位计算
 	useEffect(() => {
@@ -77,11 +147,11 @@ export function ToolBar({
 			const { start, end } = selection
 			const selectionBottom = Math.max(
 				start.y / source.scaleFactor,
-				end.y / source.scaleFactor
+				end.y / source.scaleFactor,
 			)
 			const selectionTop = Math.min(
 				start.y / source.scaleFactor,
-				end.y / source.scaleFactor
+				end.y / source.scaleFactor,
 			)
 
 			// 计算可用空间
@@ -112,10 +182,19 @@ export function ToolBar({
 		}
 	}, [selection, containerRect, toolbarSize, source])
 
+	/** 面板挂在激活的工具按钮下方，并保证不出工具栏右边界 */
+	const panelLeft = Math.max(
+		0,
+		Math.min(
+			activeToolIndex * TOOL_SLOT_WIDTH,
+			Math.max(0, toolbarSize.width - STYLE_PANEL_WIDTH),
+		),
+	)
+
 	return (
 		<div
 			ref={toolbarRef}
-			className={`fixed flex items-center bg-[#2C2C2C] p-2 rounded-lg shadow-xl z-50 border border-[#3D3D3D] transition-all
+			className={`fixed flex items-center gap-1 shrink-0 whitespace-nowrap bg-[#2C2C2C] px-2 py-1.5 rounded-lg shadow-xl z-50 border border-[#3D3D3D] transition-all
         ${show ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
 			style={{
 				left: `${position?.left ?? -9999}px`,
@@ -124,156 +203,97 @@ export function ToolBar({
 				visibility: show ? 'visible' : 'hidden',
 			}}
 		>
-			{/* 基本工具按钮 */}
-			<div className="flex items-center space-x-2">
-				<button
-					className={`px-3 h-9 rounded-md text-sm font-medium transition-all
-            ${
-							activeState === 'rect'
-								? 'bg-[#1E90FF] text-white'
-								: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
-						}`}
-					onClick={() => onTriggerEvent('RECT')}
+			{TOOL_BUTTONS.map(tool => (
+				<ToolButton
+					key={tool.tool}
+					title={tool.title}
+					active={activeState === tool.tool}
+					onClick={() => onTriggerEvent(tool.event)}
 				>
-					框选
-				</button>
-				<button
-					className={`px-3 h-9 rounded-md text-sm font-medium transition-all
-            ${
-							activeState === 'draw'
-								? 'bg-[#1E90FF] text-white'
-								: 'bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545]'
-						}`}
-					onClick={() => onTriggerEvent('DRAW')}
-				>
-					涂鸦
-				</button>
-				{/* 分隔线 */}
-				<div className="h-6 w-px bg-[#3D3D3D] mx-1"></div>
-			</div>
+					{tool.icon}
+				</ToolButton>
+			))}
 
-			{/* 颜色选择器 */}
-			<div className="relative mx-2">
-				<button
-					className="w-8 h-8 rounded-md border border-[#4A4A4A] shadow-inner flex items-center justify-center"
-					style={{ backgroundColor: drawColor }}
-					onClick={() => {
-						setShowColorPicker(true)
-						setShowWidthSlider(false)
-					}}
-					title="选择颜色"
-				>
-					<div
-						className="w-5 h-5 rounded-sm"
-						style={{ backgroundColor: drawColor }}
-					/>
-				</button>
-				{showColorPicker && (
-					<div
-						className="absolute left-0 top-10 bg-[#383838] p-3 rounded-lg shadow-xl z-50 w-48 border border-[#4A4A4A]"
-						onMouseLeave={() => setShowColorPicker(false)}
-					>
-						<div className="grid grid-cols-6 gap-2 mb-3">
-							{colorOptions.map(color => (
-								<button
-									key={color}
-									className="w-6 h-6 rounded-sm border border-transparent hover:border-white transition"
-									style={{ backgroundColor: color }}
-									onClick={() => {
-										onColorChange(color)
-										setShowColorPicker(false)
-									}}
-									title={color}
-								/>
-							))}
-						</div>
-						<input
-							type="color"
-							className="w-full h-8 cursor-pointer rounded bg-transparent"
-							value={drawColor}
-							onChange={e => onColorChange(e.target.value)}
-						/>
-					</div>
-				)}
-			</div>
-
-			{/* 画笔宽度调节器 */}
-			<div className="relative flex items-center mx-2">
-				<button
-					className="px-3 h-9 rounded-md text-sm font-medium bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545] transition-all flex items-center"
-					onClick={() => {
-						setShowWidthSlider(true)
-						setShowColorPicker(false)
-					}}
-				>
-					<div
-						className="w-4 h-4 mr-3 bg-current rounded-full"
-						style={{
-							transform: `scale(${drawWidth / 10})`,
-							opacity: 0.8,
-						}}
-					/>
-					{drawWidth}px
-				</button>
-				{showWidthSlider && (
-					<div
-						className="absolute left-0 top-10 bg-[#383838] p-3 rounded-lg shadow-xl z-50 w-48 border border-[#4A4A4A]"
-						onMouseLeave={() => setShowWidthSlider(false)}
-					>
-						<div className="flex items-center mb-2">
-							<span className="text-xs text-[#B0B0B0] mr-2">粗细:</span>
-							<span className="text-sm text-white">{drawWidth}px</span>
-						</div>
-						<input
-							type="range"
-							min="1"
-							max="20"
-							value={drawWidth}
-							onChange={e => onWidthChange(parseInt(e.target.value))}
-							className="w-full h-1 bg-[#4A4A4A] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-						/>
-						<div className="flex justify-between text-xs text-[#B0B0B0] mt-1">
-							<span>1</span>
-							<span>20</span>
-						</div>
-					</div>
-				)}
-			</div>
-
-			{/* 分隔线 */}
-			<div className="h-6 w-px bg-[#3D3D3D] mx-1"></div>
-
-			{/* 功能按钮 */}
-			<button
-				className="px-3 h-9 rounded-md text-sm font-medium bg-[#3A3A3A] text-[#D8D8D8] hover:bg-[#454545] transition-all mx-1"
+			<ToolButton
+				title="清除标注"
 				onClick={() => onTriggerEvent('CLEAR_DRAW')}
 			>
-				清除
-			</button>
+				<Trash2 className="w-4 h-4" />
+			</ToolButton>
 
-			<div className="flex-grow"></div>
+			<Separator />
 
-			{/* 操作按钮 */}
-			<div className="flex items-center space-x-2 ml-2">
-				<button
-					className="px-4 h-9 rounded-md text-sm font-medium bg-[#FF5F56] text-white hover:bg-[#FF3B30] transition-all"
-					onClick={() => onTriggerEvent('CANCEL')}
+			<ToolButton title="取消" danger onClick={() => onTriggerEvent('CANCEL')}>
+				<X className="w-4 h-4" />
+			</ToolButton>
+			<ToolButton
+				title="悬停窗口"
+				warning
+				onClick={() => onTriggerEvent('HOVER')}
+			>
+				<Pin className="w-4 h-4" />
+			</ToolButton>
+			<ToolButton
+				title="保存到剪贴板"
+				success
+				onClick={() => onTriggerEvent('SAVE')}
+			>
+				<Check className="w-4 h-4" />
+			</ToolButton>
+
+			{activeToolIndex >= 0 && (
+				<div
+					className="absolute top-full mt-2 z-[60] rounded-lg border border-[#4A4A4A] bg-[#383838] p-2 shadow-xl"
+					style={{ left: panelLeft, width: STYLE_PANEL_WIDTH }}
 				>
-					取消
-				</button>
-				<button
-					className="px-4 h-9 rounded-md text-sm font-medium bg-[#FFA500] text-white hover:bg-[#EE9A00] transition-all"
-					onClick={() => onTriggerEvent('HOVER')}
-				>
-					悬停
-				</button>
-				<button
-					className="px-4 h-9 rounded-md text-sm font-medium bg-[#27C93F] text-white hover:bg-[#1DAD32] transition-all"
-					onClick={() => onTriggerEvent('SAVE')}
-				>
-					保存
-				</button>
-			</div>
+					<div className="flex items-center justify-between gap-1">
+						{COLOR_OPTIONS.map(color => (
+							<button
+								key={color}
+								title={color}
+								onClick={() => onColorChange(color)}
+								className={`w-4 h-4 shrink-0 rounded-sm border transition ${
+									drawColor.toLowerCase() === color.toLowerCase()
+										? 'border-white'
+										: 'border-transparent hover:border-white/60'
+								}`}
+								style={{ backgroundColor: color }}
+							/>
+						))}
+					</div>
+					<input
+						type="color"
+						title="自定义颜色"
+						className="mt-2 w-full h-6 cursor-pointer rounded bg-transparent"
+						value={drawColor}
+						onChange={e => onColorChange(e.target.value)}
+					/>
+					<div className="mt-2 flex items-center gap-2">
+						<span className="text-[10px] text-[#B0B0B0] w-7 shrink-0">
+							{isTextMode ? '字号' : '粗细'}
+						</span>
+						<input
+							type="range"
+							min={sizeRange.min}
+							max={sizeRange.max}
+							value={sizeValue}
+							onChange={e => {
+								const value = parseInt(e.target.value)
+
+								if (isTextMode) {
+									onFontSizeChange(value)
+								} else {
+									onWidthChange(value)
+								}
+							}}
+							className="flex-1 h-1 bg-[#4A4A4A] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+						/>
+						<span className="text-[10px] text-white w-8 text-right tabular-nums shrink-0">
+							{sizeValue}px
+						</span>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }

@@ -10,8 +10,11 @@ import { gitmojiWindow } from './gitmoji'
 import { clipboardWindow } from './clipboard'
 import { settingWindow } from './setting'
 import { imageHostingWindow } from './imageHosting'
+import { initApps } from '../biz/apps'
 
 export function initRouter() {
+	initApps()
+
 	mainWindow.create()
 	capturerWindow.create()
 	aboutWindow.create()

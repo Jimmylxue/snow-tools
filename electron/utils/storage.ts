@@ -1,18 +1,46 @@
-import { BrowserWindow, clipboard, dialog, nativeImage } from 'electron'
+import {
+	BrowserWindow,
+	clipboard,
+	dialog,
+	nativeImage,
+	NativeImage,
+} from 'electron'
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
+
+function isRawPngBuffer(
+	source: string | Uint8Array | NativeImage,
+): source is Uint8Array {
+	return source instanceof Uint8Array
+}
+
+function normalizeImage(source: string | NativeImage) {
+	if (typeof source === 'string') {
+		const base64 = source.replace(/^data:image\/\w+;base64,/, '')
+		return nativeImage.createFromBuffer(Buffer.from(base64, 'base64'))
+	}
+
+	return source
+}
 /**
  * 将base64 图片存入剪切板
  */
-export function copyImageToClipboard(source: string) {
+export function copyImageToClipboard(
+	source: string | Uint8Array | NativeImage,
+) {
 	try {
-		const base64Data = source
-		// 移除 Base64 前缀（如果有）
-		const base64 = base64Data.replace(/^data:image\/\w+;base64,/, '')
+		if (isRawPngBuffer(source)) {
+			if (process.platform === 'darwin') {
+				clipboard.writeBuffer('public.png', Buffer.from(source))
+				return
+			}
 
-		// 创建 NativeImage 实例
-		const image = nativeImage.createFromBuffer(Buffer.from(base64, 'base64'))
+			clipboard.writeImage(nativeImage.createFromBuffer(Buffer.from(source)))
+			return
+		}
+
+		const image = normalizeImage(source)
 
 		// 复制图片到剪贴板
 		clipboard.writeImage(image)
@@ -25,26 +53,11 @@ export function copyImageToClipboard(source: string) {
  * 将 base64 图片 另存为
  */
 export async function saveImageToSystem(
-	base64Data: string,
-	instance: BrowserWindow
+	imageSource: string | Uint8Array | NativeImage,
+	instance: BrowserWindow,
 ) {
 	try {
-		// 1. 验证 base64 数据
-		if (
-			!base64Data ||
-			typeof base64Data !== 'string' ||
-			!base64Data.startsWith('data:image/')
-		) {
-			throw new Error('无效的图片数据格式')
-		}
-
-		// 2. 提取图片类型
-		const matches = base64Data.match(/^data:image\/(\w+);base64,/)
-		if (!matches || matches.length < 2) {
-			throw new Error('无法识别图片类型')
-		}
-		const imageType = matches[1]
-		const ext = imageType === 'jpeg' ? 'jpg' : imageType
+		const ext = 'png'
 
 		// 3. 弹出保存对话框
 		const { filePath, canceled } = await dialog.showSaveDialog(instance, {
@@ -52,7 +65,7 @@ export async function saveImageToSystem(
 			defaultPath: path.join(
 				os.homedir(), // 修复：require 改为 import
 				'Pictures',
-				`image_${Date.now()}.${ext}`
+				`image_${Date.now()}.${ext}`,
 			),
 			filters: [
 				{ name: `${ext.toUpperCase()} 图片`, extensions: [ext] },
@@ -67,9 +80,9 @@ export async function saveImageToSystem(
 			return { success: false, message: '用户取消保存' }
 		}
 
-		// 4. 移除 base64 前缀并转换为 Buffer
-		const base64Image = base64Data.replace(/^data:image\/\w+;base64,/, '')
-		const imageBuffer = Buffer.from(base64Image, 'base64')
+		const imageBuffer = isRawPngBuffer(imageSource)
+			? Buffer.from(imageSource)
+			: normalizeImage(imageSource).toPNG()
 
 		// 5. 写入文件
 		await fs.promises.writeFile(filePath, imageBuffer)

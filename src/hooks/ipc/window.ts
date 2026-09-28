@@ -42,6 +42,6 @@ export function sendNavigateBack() {
 	ipc.send('ROUTER_ESC_BACK')
 }
 
-export function sendOpenApp(appName: string) {
-	ipc.send('OPEN_APP', appName)
+export function sendOpenApp(appPath: string) {
+	ipc.send('OPEN_APP', appPath)
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { TApp } from 'electron/biz/apps/type'
 import { allTools } from '../../const'
 import { SearchResult } from '../SearchResult'
 import { STool } from '../STool'
@@ -8,23 +9,59 @@ import LogoPng from '@/assets/img/logo.png'
 
 const ipc = getIpc()
 
+/** 应用数量可能很多，限制一次展示条数 */
+const MAX_APP_RESULTS = 60
+
 export const SnowTools = () => {
 	const [input, setInput] = useState('')
 	const [selectedIndex, setSelectedIndex] = useState(0)
+	const [apps, setApps] = useState<TApp[]>([])
 	const gridRef = useRef(null)
+	const inputRef = useRef<HTMLInputElement>(null)
+	const appsRequestedRef = useRef(false)
+
+	/** 快捷键唤起面板时，把焦点放进搜索框 */
+	useEffect(() => {
+		const focusSearchInput = () => {
+			inputRef.current?.focus()
+			inputRef.current?.select()
+		}
+
+		ipc.on('window-shown', focusSearchInput)
+		return () => {
+			ipc.off('window-shown', focusSearchInput)
+		}
+	}, [])
+
+	/** 第一次输入时才拉取应用列表，避免每次启动都白跑一遍 */
+	useEffect(() => {
+		if (!input.trim() || appsRequestedRef.current) return
+
+		appsRequestedRef.current = true
+		ipc.getInstalledApps().then(setApps).catch(error => {
+			console.error('获取本地应用失败:', error)
+		})
+	}, [input])
 
 	const searchResult = useMemo(() => {
-		if (!input.trim()) {
+		const keyword = input.trim().toUpperCase()
+		if (!keyword) {
 			return []
 		}
-		const inputText = input.toUpperCase()
 
-		const filterTools = allTools.filter(item => {
-			const toolName = item.name?.toUpperCase()
-			return toolName.includes(inputText)
-		})
-		return [...filterTools]
-	}, [input])
+		const matchedTools = allTools.filter(tool =>
+			tool.name.toUpperCase().includes(keyword),
+		)
+		const matchedApps = apps
+			.filter(
+				app =>
+					app.appName.toUpperCase().includes(keyword) ||
+					app.originAppName.toUpperCase().includes(keyword),
+			)
+			.slice(0, MAX_APP_RESULTS)
+
+		return [...matchedTools, ...matchedApps]
+	}, [input, apps])
 
 	useEffect(() => {
 		const isShowSearchResult = input?.trim() !== ''
@@ -86,10 +123,11 @@ export const SnowTools = () => {
 					{/* Input with integrated styling */}
 					<div className="relative flex-1">
 						<input
+							ref={inputRef}
 							type="text"
 							value={input}
 							onChange={e => setInput(e.target.value)}
-							placeholder="Search tools..."
+							placeholder="Search tools & apps..."
 							autoFocus
 							className="w-full bg-white rounded-lg py-2.5 px-4 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all shadow-sm border border-gray-200 hover:border-blue-300"
 						/>

@@ -1,7 +1,5 @@
 /// <reference types="vite-plugin-electron/electron-env" />
 
-import { TApp } from './biz/apps/type'
-
 declare namespace NodeJS {
 	interface ProcessEnv {
 		/**
@@ -20,14 +18,5 @@ declare namespace NodeJS {
 		APP_ROOT: string
 		/** /dist/ or /public/ */
 		VITE_PUBLIC: string
-	}
-}
-
-// Used in Renderer process, expose in `preload.ts`
-interface Window {
-	ipcRenderer: import('electron').IpcRenderer & {
-		getWindowId: () => string | undefined
-		openExternal: (url: string) => void
-		// getInstalledApps: () => Promise<TApp[]>
 	}
 }

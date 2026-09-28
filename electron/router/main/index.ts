@@ -104,8 +104,8 @@ class MainWindow implements TWindows {
 		setTimeout(() => {
 			this.instance?.show()
 			this.instance?.focus()
+			this.instance?.webContents.send('window-shown')
 		}, 100)
-		this.instance?.webContents.send('window-shown')
 	}
 
 	close() {

@@ -54,15 +54,15 @@ export function Draggable({ children }: TProps) {
 			window.removeEventListener('mousemove', handleMouseMove)
 			window.removeEventListener('mouseup', handleMouseUp)
 		}
-	}, [isDragging, offset])
+	}, [isDragging, offset, windowId])
 
 	return (
 		<div
 			onMouseDown={handleMouseDown}
-			className=" h-screen"
+			className="h-screen w-screen"
 			style={{
 				cursor: isDragging ? 'grabbing' : 'grab',
-				backgroundColor: '#f0f0f0',
+				backgroundColor: 'transparent',
 				userSelect: 'none', // 防止拖动时选中文本
 			}}
 		>

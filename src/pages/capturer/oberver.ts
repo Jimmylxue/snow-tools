@@ -2,7 +2,7 @@ import { getIpc } from '@/hooks/ipc'
 import Observable from '@/utils/observable'
 
 export type TCapturerMessage = {
-	source: string
+	source: Uint8Array
 	type: 'fullscreen' | 'region'
 	scaleFactor: number
 }

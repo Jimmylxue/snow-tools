@@ -1,11 +1,19 @@
 import { Draggable } from '@/components/common/Draggable'
 import { getIpc } from '@/hooks/ipc'
 import { useElectron } from '@/hooks/useElectron'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 const ipc = getIpc()
 export function HoverCapturer() {
 	const { windowId, customData } = useElectron()
+	const imageUrl = useMemo(() => {
+		const source = customData?.params?.source
+		if (!source) return ''
+
+		return URL.createObjectURL(
+			new Blob([Uint8Array.from(source)], { type: 'image/png' })
+		)
+	}, [customData])
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -17,11 +25,35 @@ export function HoverCapturer() {
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [windowId])
 
+	useEffect(() => {
+		const previousHtmlBackground = document.documentElement.style.backgroundColor
+		const previousBodyBackground = document.body.style.backgroundColor
+		const previousBodyOverflow = document.body.style.overflow
+
+		document.documentElement.style.backgroundColor = 'transparent'
+		document.body.style.backgroundColor = 'transparent'
+		document.body.style.overflow = 'hidden'
+
+		return () => {
+			document.documentElement.style.backgroundColor = previousHtmlBackground
+			document.body.style.backgroundColor = previousBodyBackground
+			document.body.style.overflow = previousBodyOverflow
+		}
+	}, [])
+
+	useEffect(() => {
+		return () => {
+			if (imageUrl) {
+				URL.revokeObjectURL(imageUrl)
+			}
+		}
+	}, [imageUrl])
+
 	return (
 		customData &&
 		windowId && (
 			<div
-				className=" w-screen h-screen flex items-center justify-center"
+				className="relative h-screen w-screen overflow-hidden bg-transparent"
 				onWheel={e => {
 					const isScrollDown = e.deltaY > 0
 					ipc.send(`WINDOW-RESIZE-${windowId}`, isScrollDown)
@@ -41,11 +73,11 @@ export function HoverCapturer() {
 				/>
 				{/* 内容层 */}
 				<Draggable>
-					<div className="relative z-10 w-full h-full">
+					<div className="relative z-10 h-full w-full overflow-hidden rounded-[18px] bg-transparent">
 						<img
-							src={customData?.params?.source}
+							src={imageUrl}
 							alt=""
-							className="w-full h-full object-contain rounded-lg"
+							className="h-full w-full object-fill"
 							onLoad={() => {
 								ipc.send('SHOW_HOVER_SCREEN', windowId)
 							}}

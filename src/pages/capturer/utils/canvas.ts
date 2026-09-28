@@ -1,4 +1,120 @@
-import { Position, SelectionRect } from '../type'
+import { Position, SelectionRect, TTextAnnotation } from '../type'
+
+/** 输入框预览和画布最终渲染必须用同一套字体设置，否则提交后位置会跳 */
+export const CAPTURER_TEXT_FONT_FAMILY =
+	'-apple-system, "PingFang SC", "Helvetica Neue", sans-serif'
+export const CAPTURER_TEXT_LINE_HEIGHT = 1.3
+/** 文字虚拟边框四周等量留白 */
+export const CAPTURER_TEXT_BOX_PADDING = 4
+
+function drawTextAnnotation(
+	ctx: CanvasRenderingContext2D,
+	text: TTextAnnotation,
+) {
+	const { width, height } = getCanvasTextBounds(text.content, text.size)
+
+	ctx.save()
+	ctx.font = `${text.size}px ${CAPTURER_TEXT_FONT_FAMILY}`
+	ctx.fillStyle = text.color
+	ctx.textBaseline = 'top'
+
+	/** 以包围盒中心为锚点旋转，和 DOM 边框层的 transform-origin 保持一致 */
+	ctx.translate(text.x + width / 2, text.y + height / 2)
+	ctx.rotate(((text.rotation || 0) * Math.PI) / 180)
+	ctx.translate(-width / 2, -height / 2)
+
+	text.content.split('\n').forEach((line, index) => {
+		ctx.fillText(line, 0, index * text.size * CAPTURER_TEXT_LINE_HEIGHT)
+	})
+
+	ctx.restore()
+}
+
+let measureCanvas: HTMLCanvasElement | null = null
+
+function getMeasureContext() {
+	if (typeof document === 'undefined') {
+		return null
+	}
+
+	measureCanvas = measureCanvas ?? document.createElement('canvas')
+
+	return measureCanvas.getContext('2d')
+}
+
+/** 量一段文字的包围盒，字体设置必须和绘制时一致 */
+export function measureTextSize(content: string, size: number) {
+	const ctx = getMeasureContext()
+	const lines = content.length ? content.split('\n') : ['']
+
+	if (!ctx) {
+		return { width: 0, height: lines.length * size * CAPTURER_TEXT_LINE_HEIGHT }
+	}
+
+	ctx.font = `${size}px ${CAPTURER_TEXT_FONT_FAMILY}`
+
+	return {
+		width: lines.reduce(
+			(max, line) => Math.max(max, ctx.measureText(line).width),
+			0,
+		),
+		height: lines.length * size * CAPTURER_TEXT_LINE_HEIGHT,
+	}
+}
+
+/**
+ * 画布上文字实际占用的包围盒。
+ * canvas 用 textBaseline: 'top' 逐行绘制，行高余量全落在最后一行下方，
+ * 所以字形高度不是 行数 * 行高。
+ */
+export function getCanvasTextBounds(content: string, size: number) {
+	const { width } = measureTextSize(content, size)
+	const lines = content.length ? content.split('\n') : ['']
+
+	return {
+		width,
+		height: (lines.length - 1) * size * CAPTURER_TEXT_LINE_HEIGHT + size,
+	}
+}
+
+/**
+ * 从已合成标注的画布上按选区裁出设备像素图，
+ * 主进程拿到的就是最终结果，不再二次截屏
+ */
+export function cropCanvasToPngBytes(
+	canvas: HTMLCanvasElement,
+	rect: { x: number; y: number; width: number; height: number },
+) {
+	const offscreen = document.createElement('canvas')
+	offscreen.width = rect.width
+	offscreen.height = rect.height
+
+	const ctx = offscreen.getContext('2d', {
+		colorSpace: 'display-p3',
+	})!
+	ctx.drawImage(
+		canvas,
+		rect.x,
+		rect.y,
+		rect.width,
+		rect.height,
+		0,
+		0,
+		rect.width,
+		rect.height,
+	)
+
+	return new Promise<Uint8Array>((resolve, reject) => {
+		offscreen.toBlob(async blob => {
+			if (!blob) {
+				reject(new Error('选区导出失败：canvas.toBlob 返回空'))
+				return
+			}
+
+			resolve(new Uint8Array(await blob.arrayBuffer()))
+		}, 'image/png')
+	})
+}
 
 export function drawCanvasImage(
 	canvas: HTMLCanvasElement,
@@ -21,7 +137,8 @@ export function drawCanvasImage(
 		path: Position[]
 		color: string
 		width: number
-	} | null
+	} | null,
+	texts: TTextAnnotation[]
 ) {
 	const ctx = canvas.getContext('2d', { colorSpace: 'display-p3' })!
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -120,4 +237,11 @@ export function drawCanvasImage(
 		}
 		ctx.stroke()
 	}
+
+	// 绘制文字标注（最后绘制，保证压在图形之上）
+	texts.forEach(text => {
+		if (text.content) {
+			drawTextAnnotation(ctx, text)
+		}
+	})
 }

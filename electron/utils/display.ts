@@ -1,38 +1,19 @@
 import { screen } from 'electron'
 import { SCREEN_SIZE_MAP, T_SCREEN_SIZE_TYPE } from '../ipc/screen'
 
+/**
+ * 光标可能在已断开的外接屏残留坐标上，这里取最近的屏幕而不是精确匹配
+ */
 export function getCurrentDisplay() {
-	const currentDisplay = screen.getCursorScreenPoint()
-	const displays = screen.getAllDisplays()
-
-	const display = displays.find(display => {
-		return (
-			currentDisplay.x >= display.bounds.x &&
-			currentDisplay.x <= display.bounds.x + display.bounds.width &&
-			currentDisplay.y >= display.bounds.y &&
-			currentDisplay.y <= display.bounds.y + display.bounds.height
-		)
-	})
-
-	return display
+	return screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
 }
 
 export function getCenterPositionBoundByRouter(router: T_SCREEN_SIZE_TYPE) {
 	const { width } = SCREEN_SIZE_MAP[router]
-	const currentDisplay = screen.getCursorScreenPoint()
-	const displays = screen.getAllDisplays()
-
-	const display = displays.find(display => {
-		return (
-			currentDisplay.x >= display.bounds.x &&
-			currentDisplay.x <= display.bounds.x + display.bounds.width &&
-			currentDisplay.y >= display.bounds.y &&
-			currentDisplay.y <= display.bounds.y + display.bounds.height
-		)
-	})
+	const { bounds } = getCurrentDisplay()
 
 	return {
-		x: display!.bounds.x + display!.bounds.width / 2 - width / 2, // 窗口居中
-		y: display!.bounds.y + display!.bounds.height / 4.5,
+		x: bounds.x + bounds.width / 2 - width / 2, // 窗口居中
+		y: bounds.y + bounds.height / 4.5,
 	}
 }
