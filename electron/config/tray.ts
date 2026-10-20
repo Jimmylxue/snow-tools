@@ -1,5 +1,6 @@
 import { app, BrowserWindow, nativeImage, Tray, Menu } from 'electron'
 import { aboutWindow } from '../router/about'
+import { isCaptureSessionActive } from '../router/capturer/session'
 import fs from 'fs'
 import path from 'path'
 
@@ -111,6 +112,7 @@ export class AppTray {
 			{
 				label: '关于',
 				click: () => {
+					if (isCaptureSessionActive()) return
 					aboutWindow.show()
 				},
 			},
@@ -143,7 +145,7 @@ export class AppTray {
 	}
 
 	private toggleWindow() {
-		if (!this.mainWindow) return
+		if (!this.mainWindow || isCaptureSessionActive()) return
 
 		if (this.mainWindow.isVisible()) {
 			this.mainWindow.hide()

@@ -37,8 +37,8 @@ const FANYI_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 }
 
 export const SYSTEM_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
-	width: 600,
-	height: 400,
+	width: 640,
+	height: 480,
 	topProportion: 1.3,
 }
 
@@ -54,6 +54,12 @@ export const IMAGE_HOSTING_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 	topProportion: 1.3,
 }
 
+export const HOSTS_SCREEN_SIZE: T_SCREEN_VALUE = {
+	width: 780,
+	height: 560,
+	topProportion: 1.3,
+}
+
 export const SCREEN_SIZE_MAP: { [key in T_SCREEN_SIZE_TYPE]: T_SCREEN_VALUE } =
 	{
 		NORMAL: NORMAL_SCREEN_SIZE,
@@ -65,4 +71,5 @@ export const SCREEN_SIZE_MAP: { [key in T_SCREEN_SIZE_TYPE]: T_SCREEN_VALUE } =
 		GITMOJI: GITMOJI_SCREEN_SIZE,
 		ABOUT: ABOUT_SCREEN_SIZE,
 		IMAGE_HOSTING: IMAGE_HOSTING_SETTING_SCREEN_SIZE,
+		HOSTS: HOSTS_SCREEN_SIZE,
 	}

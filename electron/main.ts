@@ -4,6 +4,7 @@ import path from 'node:path'
 import { initRouter } from './router'
 import { appTray } from './config/tray'
 import { navigate } from './router/core'
+import { shouldStartHidden } from './biz/autoLaunch'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -62,7 +63,7 @@ app.on('will-quit', () => {
 })
 
 app.whenReady().then(async () => {
-	initRouter()
+	initRouter(shouldStartHidden())
 	if (is_mac) {
 		console.log(
 			'辅助功能权限:',

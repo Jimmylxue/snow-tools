@@ -10,6 +10,7 @@ export type TRouterPage =
 	| 'gitmoji'
 	| 'clipboard'
 	| 'imageHosting'
+	| 'hosts'
 
 type TRouterMap = {
 	[key in TRouterPage]: TWindows
@@ -38,10 +39,12 @@ export class TNavigation {
 		}
 	}
 
-	register(_routerMap: TRouterMap) {
+	register(_routerMap: TRouterMap, options?: { show?: boolean }) {
 		this.routerMap = _routerMap
 
-		this.routerMap[this.currentRouter].show()
+		if (options?.show !== false) {
+			this.routerMap[this.currentRouter].show()
+		}
 	}
 
 	replace(routerName: TRouterPage) {

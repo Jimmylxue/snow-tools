@@ -10,10 +10,15 @@ import { gitmojiWindow } from './gitmoji'
 import { clipboardWindow } from './clipboard'
 import { settingWindow } from './setting'
 import { imageHostingWindow } from './imageHosting'
+import { hostsWindow } from './hosts'
 import { initApps } from '../biz/apps'
+import { initHosts } from '../biz/hosts'
+import { initAutoLaunch } from '../biz/autoLaunch'
 
-export function initRouter() {
+export function initRouter(startHidden = false) {
 	initApps()
+	initHosts()
+	initAutoLaunch()
 
 	mainWindow.create()
 	capturerWindow.create()
@@ -23,18 +28,23 @@ export function initRouter() {
 	clipboardWindow.create()
 	settingWindow.create()
 	imageHostingWindow.create()
+	hostsWindow.create()
 
 	appTray.initTray(mainWindow.instance!)
-	navigate.register({
-		base: mainWindow,
-		setting: settingWindow,
-		capturer: capturerWindow,
-		about: aboutWindow,
-		translate: translateWindow,
-		gitmoji: gitmojiWindow,
-		clipboard: clipboardWindow,
-		imageHosting: imageHostingWindow,
-	})
+	navigate.register(
+		{
+			base: mainWindow,
+			setting: settingWindow,
+			capturer: capturerWindow,
+			about: aboutWindow,
+			translate: translateWindow,
+			gitmoji: gitmojiWindow,
+			clipboard: clipboardWindow,
+			imageHosting: imageHostingWindow,
+			hosts: hostsWindow,
+		},
+		{ show: !startHidden },
+	)
 
 	registerGlobalShortCut()
 

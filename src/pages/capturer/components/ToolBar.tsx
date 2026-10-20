@@ -1,5 +1,15 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react'
-import { Check, Pencil, Pin, Square, Trash2, Type, X } from 'lucide-react'
+import {
+	Check,
+	Eraser,
+	Grid3x3,
+	Pencil,
+	Pin,
+	Square,
+	Trash2,
+	Type,
+	X,
+} from 'lucide-react'
 import { SelectionRect, TAbsolutePosition, Tool } from '../type'
 import { TCapturerMessage } from '../oberver'
 
@@ -12,6 +22,8 @@ type TProps = {
 			| 'DRAW'
 			| 'RECT'
 			| 'TEXT'
+			| 'MOSAIC'
+			| 'ERASER'
 			| 'CLEAR_DRAW'
 			| 'CANCEL'
 			| 'SAVE'
@@ -26,18 +38,34 @@ type TProps = {
 	onWidthChange: (width: number) => void
 	fontSize: number
 	onFontSizeChange: (size: number) => void
+	mosaicWidth: number
+	onMosaicWidthChange: (width: number) => void
+	eraserWidth: number
+	onEraserWidthChange: (width: number) => void
 	source?: TCapturerMessage
 }
 
 const TOOL_BUTTONS: Array<{
 	tool: Tool
 	title: string
-	event: 'RECT' | 'DRAW' | 'TEXT'
+	event: 'RECT' | 'DRAW' | 'TEXT' | 'MOSAIC' | 'ERASER'
 	icon: ReactNode
 }> = [
 	{ tool: 'rect', title: '框选', event: 'RECT', icon: <Square className="w-4 h-4" /> },
 	{ tool: 'draw', title: '涂鸦', event: 'DRAW', icon: <Pencil className="w-4 h-4" /> },
 	{ tool: 'text', title: '文字', event: 'TEXT', icon: <Type className="w-4 h-4" /> },
+	{
+		tool: 'mosaic',
+		title: '马赛克',
+		event: 'MOSAIC',
+		icon: <Grid3x3 className="w-4 h-4" />,
+	},
+	{
+		tool: 'eraser',
+		title: '橡皮擦',
+		event: 'ERASER',
+		icon: <Eraser className="w-4 h-4" />,
+	},
 ]
 
 // uTools风格的颜色选项
@@ -99,6 +127,37 @@ function Separator() {
 	return <div className="w-px h-5 shrink-0 bg-[#3D3D3D] mx-1" />
 }
 
+function SizeSlider({
+	label,
+	value,
+	min,
+	max,
+	onChange,
+}: {
+	label: string
+	value: number
+	min: number
+	max: number
+	onChange: (value: number) => void
+}) {
+	return (
+		<div className="mt-2 flex items-center gap-2">
+			<span className="text-[10px] text-[#B0B0B0] w-7 shrink-0">{label}</span>
+			<input
+				type="range"
+				min={min}
+				max={max}
+				value={value}
+				onChange={e => onChange(parseInt(e.target.value))}
+				className="flex-1 h-1 bg-[#4A4A4A] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+			/>
+			<span className="text-[10px] text-white w-8 text-right tabular-nums shrink-0">
+				{value}px
+			</span>
+		</div>
+	)
+}
+
 export function ToolBar({
 	activeState,
 	onTriggerEvent,
@@ -111,6 +170,10 @@ export function ToolBar({
 	onWidthChange,
 	fontSize,
 	onFontSizeChange,
+	mosaicWidth,
+	onMosaicWidthChange,
+	eraserWidth,
+	onEraserWidthChange,
 	source,
 }: TProps) {
 	const [position, setPosition] = useState<TAbsolutePosition>()
@@ -124,6 +187,8 @@ export function ToolBar({
 
 	/** 文字工具下同一个滑杆控制字号 */
 	const isTextMode = activeState === 'text'
+	const isMosaicMode = activeState === 'mosaic'
+	const isEraserMode = activeState === 'eraser'
 	const sizeValue = isTextMode ? fontSize : drawWidth
 	const sizeRange = isTextMode ? { min: 12, max: 48 } : { min: 1, max: 20 }
 	const activeToolIndex = TOOL_BUTTONS.findIndex(
@@ -246,52 +311,59 @@ export function ToolBar({
 					className="absolute top-full mt-2 z-[60] rounded-lg border border-[#4A4A4A] bg-[#383838] p-2 shadow-xl"
 					style={{ left: panelLeft, width: STYLE_PANEL_WIDTH }}
 				>
-					<div className="flex items-center justify-between gap-1">
-						{COLOR_OPTIONS.map(color => (
-							<button
-								key={color}
-								title={color}
-								onClick={() => onColorChange(color)}
-								className={`w-4 h-4 shrink-0 rounded-sm border transition ${
-									drawColor.toLowerCase() === color.toLowerCase()
-										? 'border-white'
-										: 'border-transparent hover:border-white/60'
-								}`}
-								style={{ backgroundColor: color }}
-							/>
-						))}
-					</div>
-					<input
-						type="color"
-						title="自定义颜色"
-						className="mt-2 w-full h-6 cursor-pointer rounded bg-transparent"
-						value={drawColor}
-						onChange={e => onColorChange(e.target.value)}
-					/>
-					<div className="mt-2 flex items-center gap-2">
-						<span className="text-[10px] text-[#B0B0B0] w-7 shrink-0">
-							{isTextMode ? '字号' : '粗细'}
-						</span>
-						<input
-							type="range"
-							min={sizeRange.min}
-							max={sizeRange.max}
-							value={sizeValue}
-							onChange={e => {
-								const value = parseInt(e.target.value)
-
-								if (isTextMode) {
-									onFontSizeChange(value)
-								} else {
-									onWidthChange(value)
-								}
-							}}
-							className="flex-1 h-1 bg-[#4A4A4A] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+					{isMosaicMode ? (
+						<SizeSlider
+							label="笔刷"
+							value={mosaicWidth}
+							min={8}
+							max={80}
+							onChange={onMosaicWidthChange}
 						/>
-						<span className="text-[10px] text-white w-8 text-right tabular-nums shrink-0">
-							{sizeValue}px
-						</span>
-					</div>
+					) : isEraserMode ? (
+						<SizeSlider
+							label="笔刷"
+							value={eraserWidth}
+							min={8}
+							max={80}
+							onChange={onEraserWidthChange}
+						/>
+					) : (
+						<>
+							<div className="flex items-center justify-between gap-1">
+								{COLOR_OPTIONS.map(color => (
+									<button
+										key={color}
+										title={color}
+										onClick={() => onColorChange(color)}
+										className={`w-4 h-4 shrink-0 rounded-sm border transition ${
+											drawColor.toLowerCase() === color.toLowerCase()
+												? 'border-white'
+												: 'border-transparent hover:border-white/60'
+										}`}
+										style={{ backgroundColor: color }}
+									/>
+								))}
+							</div>
+							<input
+								type="color"
+								title="自定义颜色"
+								className="mt-2 w-full h-6 cursor-pointer rounded bg-transparent"
+								value={drawColor}
+								onChange={e => onColorChange(e.target.value)}
+							/>
+							<SizeSlider
+								label={isTextMode ? '字号' : '粗细'}
+								value={sizeValue}
+								min={sizeRange.min}
+								max={sizeRange.max}
+								onChange={value =>
+									isTextMode
+										? onFontSizeChange(value)
+										: onWidthChange(value)
+								}
+							/>
+						</>
+					)}
 				</div>
 			)}
 		</div>

@@ -6,7 +6,15 @@ import {
 } from '@/hooks/ipc/window'
 import { ToolBar } from './components/ToolBar'
 import { PixelColor } from './components/PixelColor'
-import { Position, SelectionRect, TCurrentMouseInfo, Tool, TTextAnnotation, TTextTransform } from './type'
+import {
+	Position,
+	SelectionRect,
+	TCurrentMouseInfo,
+	TPaintStroke,
+	Tool,
+	TTextAnnotation,
+	TTextTransform,
+} from './type'
 import { SelectionBorder } from './components/SelectionBorder'
 import {
 	capturerCloseObserve,
@@ -45,17 +53,9 @@ export function Capturer() {
 	const [showTools, setShowTools] = useState(false)
 	const [activeTool, setActiveTool] = useState<Tool>('select')
 	const [drawing, setDrawing] = useState(false)
-	const [drawings, setDrawings] = useState<
-		Array<{ path: Position[]; color: string; width: number }>
-	>([])
 	const [currentMouseInfo, setCurrentMouseInfo] = useState<TCurrentMouseInfo>()
 	const [backgroundImage, setBackgroundImage] =
 		useState<HTMLImageElement | null>(null)
-	const [currentDrawing, setCurrentDrawing] = useState<{
-		path: Position[]
-		color: string
-		width: number
-	} | null>(null)
 	/** 画笔颜色 */
 	const [drawColor, setDrawColor] = useState('#ff0000')
 	/** 画笔宽度 */
@@ -64,11 +64,23 @@ export function Capturer() {
 	const [fontSize, setFontSize] = useState(20)
 	/** 已提交的文字标注 */
 	const [texts, setTexts] = useState<TTextAnnotation[]>([])
+	/** 涂鸦 / 马赛克 / 橡皮擦，按创建顺序存同一个数组，层序才正确 */
+	const [paints, setPaints] = useState<TPaintStroke[]>([])
+	const [currentPaint, setCurrentPaint] = useState<TPaintStroke | null>(null)
+	const [mosaicWidth, setMosaicWidth] = useState(32)
+	/** 橡皮擦笔刷宽度（画布设备像素） */
+	const [eraserWidth, setEraserWidth] = useState(32)
+	/** 光标是否在画布上，用于决定要不要显示画笔圆圈 */
+	const [isHoveringCanvas, setIsHoveringCanvas] = useState(false)
 	/** 正在输入的文字落点（设备像素），null 表示没有输入框 */
 	const [editingText, setEditingText] = useState<Position | null>(null)
 	const [textDraft, setTextDraft] = useState('')
 	/** 正在对文字做的操作：移动 / 缩放 / 旋转 */
 	const [textTransform, setTextTransform] = useState<TTextTransform | null>(
+		null,
+	)
+	/** 当前选中的文字下标，按 Delete / Backspace 整条删除 */
+	const [selectedTextIndex, setSelectedTextIndex] = useState<number | null>(
 		null,
 	)
 	const textInputRef = useRef<HTMLTextAreaElement>(null)
@@ -106,14 +118,15 @@ export function Capturer() {
 			setCurrentMouseInfo(undefined)
 			setSelection(null)
 			setShowTools(false)
-			setDrawings([])
-			setCurrentDrawing(null)
+			setPaints([])
+			setCurrentPaint(null)
 			setRectangles([])
 			setCurrentRectangle(null)
 			setTexts([])
 			setEditingText(null)
 			setTextDraft('')
 			setTextTransform(null)
+			setSelectedTextIndex(null)
 		})
 	}, [])
 
@@ -122,7 +135,8 @@ export function Capturer() {
 		setIsSelecting(true)
 		setSelection(null)
 		setShowTools(false)
-		setDrawings([])
+		setPaints([])
+		setCurrentPaint(null)
 	}, [])
 
 	useEffect(() => {
@@ -203,7 +217,8 @@ export function Capturer() {
 	}
 
 	/** 工具按钮按复选处理：再点一次当前工具即取消选择，回到无工具状态 */
-	const toggleTool = (tool: 'rect' | 'draw' | 'text') => {
+	const toggleTool = (tool: 'rect' | 'draw' | 'text' | 'mosaic' | 'eraser') => {
+		setSelectedTextIndex(null)
 		setActiveTool(activeTool === tool ? 'select' : tool)
 	}
 
@@ -219,6 +234,8 @@ export function Capturer() {
 
 		const text = texts[index]
 		if (!text) return
+
+		setSelectedTextIndex(index)
 
 		const { x, y } = getScaledPosition(e, visibleCanvasRef.current)
 
@@ -270,6 +287,7 @@ export function Capturer() {
 				/** 阻止浏览器把焦点移走，否则输入框会立刻 blur 消失 */
 				e.preventDefault()
 				commitEditingText()
+				setSelectedTextIndex(null)
 				setEditingText({ x, y })
 				setTextDraft('')
 				return
@@ -283,7 +301,8 @@ export function Capturer() {
 				})
 			} else if (activeTool === 'draw') {
 				setDrawing(true)
-				setCurrentDrawing({
+				setCurrentPaint({
+					kind: 'pen',
 					path: [{ x, y }],
 					color: drawColor,
 					width: drawWidth,
@@ -296,6 +315,20 @@ export function Capturer() {
 					color: drawColor,
 					width: drawWidth,
 				})
+			} else if (activeTool === 'mosaic') {
+				setDrawing(true)
+				setCurrentPaint({
+					kind: 'mosaic',
+					path: [{ x, y }],
+					width: mosaicWidth,
+				})
+			} else if (activeTool === 'eraser') {
+				setDrawing(true)
+				setCurrentPaint({
+					kind: 'eraser',
+					path: [{ x, y }],
+					width: eraserWidth,
+				})
 			}
 		},
 		[
@@ -305,6 +338,8 @@ export function Capturer() {
 			drawColor,
 			drawWidth,
 			commitEditingText,
+			mosaicWidth,
+			eraserWidth,
 		],
 	)
 
@@ -397,11 +432,25 @@ export function Capturer() {
 
 			if (selection && activeTool === 'select' && !showTools) {
 				setSelection(prev => ({ ...prev!, end: { x, y } }))
-			} else if (drawing && currentDrawing && activeTool === 'draw') {
-				setCurrentDrawing(prev => ({
-					...prev!,
-					path: [...prev!.path, { x, y }],
-				}))
+			} else if (
+				drawing &&
+				currentPaint &&
+				(activeTool === 'draw' ||
+					activeTool === 'mosaic' ||
+					activeTool === 'eraser')
+			) {
+				setCurrentPaint(prev => {
+					if (!prev) return prev
+
+					const last = prev.path[prev.path.length - 1]
+
+					/** 采样去重：太近的点直接丢掉，减少状态更新和每帧重绘量 */
+					if (last && Math.hypot(x - last.x, y - last.y) < 1.5) {
+						return prev
+					}
+
+					return { ...prev, path: [...prev.path, { x, y }] }
+				})
 			} else if (drawing && currentRectangle && activeTool === 'rect') {
 				setCurrentRectangle(prev => ({
 					...prev!,
@@ -413,7 +462,7 @@ export function Capturer() {
 			selection,
 			activeTool,
 			drawing,
-			currentDrawing,
+			currentPaint,
 			currentRectangle,
 			showTools,
 			textTransform,
@@ -433,9 +482,15 @@ export function Capturer() {
 			}
 		}
 
-		if (drawing && currentDrawing && activeTool === 'draw') {
-			setDrawings(prev => [...prev, currentDrawing])
-			setCurrentDrawing(null)
+		if (
+			drawing &&
+			currentPaint &&
+			(activeTool === 'draw' ||
+				activeTool === 'mosaic' ||
+				activeTool === 'eraser')
+		) {
+			setPaints(prev => [...prev, currentPaint])
+			setCurrentPaint(null)
 		}
 
 		if (drawing && currentRectangle && activeTool === 'rect') {
@@ -450,7 +505,7 @@ export function Capturer() {
 		selection,
 		activeTool,
 		drawing,
-		currentDrawing,
+		currentPaint,
 		currentRectangle,
 	])
 
@@ -491,8 +546,8 @@ export function Capturer() {
 				rectangles,
 				selection,
 				null,
-				drawings,
-				null,
+				paints,
+				currentPaint,
 				finalTexts,
 			)
 
@@ -531,7 +586,8 @@ export function Capturer() {
 			source,
 			backgroundImage,
 			rectangles,
-			drawings,
+			paints,
+			currentPaint,
 			texts,
 			editingText,
 			textDraft,
@@ -581,8 +637,8 @@ export function Capturer() {
 			rectangles,
 			selection,
 			currentRectangle,
-			drawings,
-			currentDrawing,
+			paints,
+			currentPaint,
 			texts,
 		)
 	}, [
@@ -590,8 +646,8 @@ export function Capturer() {
 		selection,
 		rectangles,
 		currentRectangle,
-		drawings,
-		currentDrawing,
+		paints,
+		currentPaint,
 		backgroundImage,
 		texts,
 	])
@@ -629,12 +685,14 @@ export function Capturer() {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
 				setTextTransform(null)
+				setSelectedTextIndex(null)
 				if (editingText) {
 					setEditingText(null)
 					setTextDraft('')
 				} else if (showTools) {
 					setSelection(null)
-					setDrawings([])
+					setPaints([])
+					setCurrentPaint(null)
 					setRectangles([])
 					setTexts([])
 					setShowTools(false)
@@ -644,8 +702,8 @@ export function Capturer() {
 				} else {
 					setActiveTool('select')
 					setSource(undefined)
-					setDrawings([])
-					setCurrentDrawing(null)
+					setPaints([])
+					setCurrentPaint(null)
 					setRectangles([])
 					setCurrentRectangle(null)
 					setTexts([])
@@ -657,16 +715,40 @@ export function Capturer() {
 				if (!editingText && selection) {
 					void saveScreenshot()
 				}
+			} else if (
+				(event.key === 'Delete' || event.key === 'Backspace') &&
+				!editingText &&
+				selectedTextIndex !== null
+			) {
+				/** 选中某条文字后按删除键，整条移除 */
+				event.preventDefault()
+				setTexts(prev =>
+					prev.filter((_, index) => index !== selectedTextIndex),
+				)
+				setSelectedTextIndex(null)
+				setTextTransform(null)
 			}
 		}
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [selection, showTools, saveScreenshot, editingText])
+	}, [selection, showTools, saveScreenshot, editingText, selectedTextIndex])
 
 	/**
 	 * 输入框按内容自适应，否则会把整行都盖住，挡住画布上已提交文字的点击
 	 */
 	const editingBox = editingText ? measureTextSize(textDraft, fontSize) : null
+
+	/** 画笔类工具（涂鸦 / 马赛克 / 橡皮擦）用圆圈光标，直径等于笔刷粗细 */
+	const isBrushTool =
+		activeTool === 'draw' ||
+		activeTool === 'mosaic' ||
+		activeTool === 'eraser'
+	const brushWidth =
+		activeTool === 'mosaic'
+			? mosaicWidth
+			: activeTool === 'eraser'
+				? eraserWidth
+				: drawWidth
 
 	/** 有选区之后，取色模块只在选区内部显示 */
 	const selectionBounds = selection
@@ -698,10 +780,13 @@ export function Capturer() {
 						ref={visibleCanvasRef}
 						className="block"
 						onMouseDown={handleMouseDown}
+						onMouseEnter={() => setIsHoveringCanvas(true)}
+						onMouseLeave={() => setIsHoveringCanvas(false)}
 						draggable={false}
 						style={{
-							cursor:
-								activeTool === 'text'
+							cursor: isBrushTool
+								? 'none'
+								: activeTool === 'text'
 									? 'text'
 									: !showTools
 										? 'crosshair'
@@ -725,8 +810,12 @@ export function Capturer() {
 									onMouseDown={e =>
 										startTextTransform('move', index, e)
 									}
-									title="拖动移动，拖四角缩放，拖顶部圆点旋转"
-									className="absolute z-[55] cursor-move border border-dashed border-white/70"
+									title="拖动移动，拖四角缩放，拖顶部圆点旋转，Delete 删除"
+									className={`absolute z-[55] cursor-move border ${
+										selectedTextIndex === index
+											? 'border-solid border-[#1E90FF]'
+											: 'border-dashed border-white/70'
+									}`}
 									style={{
 										left:
 											text.x / source.scaleFactor -
@@ -812,6 +901,26 @@ export function Capturer() {
 				/>
 			)}
 
+			{/* 画笔类工具的圆圈光标，直径就是笔刷粗细 */}
+			{isBrushTool && isHoveringCanvas && currentMouseInfo && source && (
+				<div
+					className="pointer-events-none fixed z-[54] rounded-full"
+					style={{
+						left: currentMouseInfo.clientX,
+						top: currentMouseInfo.clientY,
+						width: brushWidth / source.scaleFactor,
+						height: brushWidth / source.scaleFactor,
+						transform: 'translate(-50%, -50%)',
+						border: '1px solid rgba(255, 255, 255, 0.9)',
+						boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.55)',
+						backgroundColor:
+							activeTool === 'eraser'
+								? 'rgba(255, 255, 255, 0.18)'
+								: 'transparent',
+					}}
+				/>
+			)}
+
 			<ToolBar
 				containerRect={containerRect}
 				selection={selection}
@@ -819,6 +928,10 @@ export function Capturer() {
 				drawColor={drawColor}
 				drawWidth={drawWidth}
 				fontSize={fontSize}
+				mosaicWidth={mosaicWidth}
+				eraserWidth={eraserWidth}
+				onMosaicWidthChange={setMosaicWidth}
+				onEraserWidthChange={setEraserWidth}
 				onColorChange={setDrawColor}
 				onFontSizeChange={setFontSize}
 				onWidthChange={setDrawWidth}
@@ -841,15 +954,22 @@ export function Capturer() {
 						case 'TEXT':
 							toggleTool('text')
 							break
+						case 'MOSAIC':
+							toggleTool('mosaic')
+							break
+						case 'ERASER':
+							toggleTool('eraser')
+							break
 						case 'CLEAR_DRAW':
-							setDrawings([])
-							setCurrentDrawing(null)
+							setPaints([])
+							setCurrentPaint(null)
 							setRectangles([])
 							setCurrentRectangle(null)
 							setTexts([])
 							setEditingText(null)
 							setTextDraft('')
 							setTextTransform(null)
+							setSelectedTextIndex(null)
 							break
 						case 'CANCEL':
 							cancelScreenshot()

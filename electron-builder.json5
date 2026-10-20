@@ -33,6 +33,10 @@
 		icon: 'public/logo.png',
 		target: ['dmg'],
 		artifactName: '${productName}-Mac-${version}-Installer.${ext}',
+		// TCC 的授权记录会把签名证书的 subject.CN 写进 code requirement，换一张证书重签后
+		// 旧记录永远匹配不上，屏幕录制就会陷入「设置里已勾选、系统仍然拒绝」的死循环。
+		// 不指定时 electron-builder 会从钥匙串里自动挑一张，所以这里必须钉死。
+		identity: 'Apple Development: yesihaojimmy@gmail.com (T3DM878SDC)',
 		// macOS 特定配置
 		extendInfo: {
 			LSUIElement: false, // 确保应用显示在 Dock 和菜单栏
@@ -72,4 +76,6 @@
 		target: ['AppImage'],
 		artifactName: '${productName}-Linux-${version}.${ext}',
 	},
+	// 证书不在钥匙串里时直接让构建失败，避免产出未签名的包（未签名同样会导致授权无法持久化）
+	forceCodeSigning: true,
 }

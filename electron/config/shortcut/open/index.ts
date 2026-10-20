@@ -2,6 +2,7 @@ import { globalShortcut, ipcMain } from 'electron'
 import { EShortCutKey, TShortCut } from '../type'
 import { getLocalStorageHotKeyByKeyName } from '../utils'
 import { navigate } from '../../../router/core'
+import { isCaptureSessionActive } from '../../../router/capturer/session'
 
 class OpenShortCut implements TShortCut {
 	shortcutKey = EShortCutKey.软件开启
@@ -39,6 +40,15 @@ class OpenShortCut implements TShortCut {
 		try {
 			// 注册新的热键
 			globalShortcut.register(hotkey, () => {
+				/** 截屏期间不接受唤醒，保持遮罩独占屏幕 */
+				if (isCaptureSessionActive()) {
+					const capturer = navigate.routerMap?.capturer.instance
+					if (capturer?.isVisible()) {
+						capturer.focus()
+					}
+					return
+				}
+
 				const openWindow = navigate.routerMap![navigate.currentRouter]
 				const openWindowInstance = openWindow.instance!
 				if (openWindowInstance?.isVisible()) {

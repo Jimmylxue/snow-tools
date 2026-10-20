@@ -12,6 +12,7 @@ import { useEffect } from 'react'
 import { sendNavigateBack } from './hooks/ipc/window'
 import { SystemSetting } from './pages/setting'
 import { ImageHosting } from './pages/imageHosting'
+import { Hosts } from './pages/hosts'
 
 function App() {
 	useClipBoardChange()
@@ -19,6 +20,14 @@ function App() {
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Escape') {
+				/** 弹窗里的 Esc 只关闭弹窗，不要连整个工具窗口一起关掉 */
+				if (
+					document.querySelector(
+						'[role="dialog"][data-state="open"], [role="listbox"][data-state="open"]',
+					)
+				) {
+					return
+				}
 				event.preventDefault()
 				sendNavigateBack()
 			}
@@ -39,6 +48,7 @@ function App() {
 				<Route path="/clipboard" element={<Clipboard />} />
 				<Route path="/setting" element={<SystemSetting />} />
 				<Route path="/imageHosting" element={<ImageHosting />} />
+				<Route path="/hosts" element={<Hosts />} />
 				<Route
 					path="*"
 					element={

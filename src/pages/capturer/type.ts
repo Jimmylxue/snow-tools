@@ -1,4 +1,4 @@
-export type Tool = 'select' | 'draw' | 'erase' | 'rect' | 'text'
+export type Tool = 'select' | 'draw' | 'rect' | 'text' | 'mosaic' | 'eraser'
 
 export type Position = {
 	x: number
@@ -40,6 +40,12 @@ export type SelectionRect = {
 	start: Position
 	end: Position
 }
+
+/** 画笔类笔画；涂鸦、马赛克、橡皮擦存在同一个有序数组里，层序才正确 */
+export type TPaintStroke =
+	| { kind: 'pen'; path: Position[]; color: string; width: number }
+	| { kind: 'mosaic'; path: Position[]; width: number }
+	| { kind: 'eraser'; path: Position[]; width: number }
 
 export type TAbsolutePosition = {
 	left: number

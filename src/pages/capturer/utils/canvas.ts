@@ -1,4 +1,4 @@
-import { Position, SelectionRect, TTextAnnotation } from '../type'
+import { Position, SelectionRect, TPaintStroke, TTextAnnotation } from '../type'
 
 /** 输入框预览和画布最终渲染必须用同一套字体设置，否则提交后位置会跳 */
 export const CAPTURER_TEXT_FONT_FAMILY =
@@ -77,6 +77,175 @@ export function getCanvasTextBounds(content: string, size: number) {
 	}
 }
 
+/** 马赛克的像素块大小（画布设备像素） */
+const MOSAIC_BLOCK_SIZE = 14
+
+let paintCache: {
+	background: HTMLImageElement
+	width: number
+	height: number
+	pixelated: HTMLCanvasElement
+	committed: HTMLCanvasElement
+	frame: HTMLCanvasElement
+	/** 用来判断已提交图层是否需要重建 */
+	committedPaints: TPaintStroke[] | null
+} | null = null
+
+function createLayerCanvas(width: number, height: number) {
+	const canvas = document.createElement('canvas')
+	canvas.width = width
+	canvas.height = height
+	return canvas
+}
+
+/** 像素化底图 + 已提交图层 + 当前帧图层，只在背景或尺寸变化时重建 */
+function getPaintCache(
+	background: HTMLImageElement,
+	width: number,
+	height: number,
+) {
+	if (
+		paintCache &&
+		paintCache.background === background &&
+		paintCache.width === width &&
+		paintCache.height === height
+	) {
+		return paintCache
+	}
+
+	const block = Math.max(2, Math.round(MOSAIC_BLOCK_SIZE))
+	const small = document.createElement('canvas')
+	small.width = Math.max(1, Math.ceil(width / block))
+	small.height = Math.max(1, Math.ceil(height / block))
+	small
+		.getContext('2d', { colorSpace: 'display-p3' })!
+		.drawImage(background, 0, 0, small.width, small.height)
+
+	const pixelated = createLayerCanvas(width, height)
+	const pixelatedCtx = pixelated.getContext('2d', {
+		colorSpace: 'display-p3',
+	})!
+	pixelatedCtx.imageSmoothingEnabled = false
+	pixelatedCtx.drawImage(small, 0, 0, width, height)
+
+	paintCache = {
+		background,
+		width,
+		height,
+		pixelated,
+		committed: createLayerCanvas(width, height),
+		frame: createLayerCanvas(width, height),
+		committedPaints: null,
+	}
+
+	return paintCache
+}
+
+/**
+ * 把一条笔画画到标注图层上。
+ * 马赛克用像素化底图当 strokeStyle 的 pattern，坐标和画布对齐，
+ * 这样一条普通 stroke 就能直接把马赛克"刷"进同一条有序图层。
+ */
+function drawPaintStroke(
+	ctx: CanvasRenderingContext2D,
+	stroke: TPaintStroke,
+	pixelated: HTMLCanvasElement,
+) {
+	if (stroke.path.length === 0) return
+
+	ctx.save()
+	ctx.lineCap = 'round'
+	ctx.lineJoin = 'round'
+	ctx.lineWidth = stroke.width
+
+	if (stroke.kind === 'eraser') {
+		ctx.globalCompositeOperation = 'destination-out'
+		ctx.strokeStyle = '#000'
+		ctx.fillStyle = '#000'
+	} else if (stroke.kind === 'mosaic') {
+		const pattern = ctx.createPattern(pixelated, 'no-repeat')
+
+		if (!pattern) {
+			ctx.restore()
+			return
+		}
+
+		ctx.strokeStyle = pattern
+		ctx.fillStyle = pattern
+	} else {
+		ctx.strokeStyle = stroke.color
+		ctx.fillStyle = stroke.color
+	}
+
+	ctx.beginPath()
+
+	if (stroke.path.length === 1) {
+		ctx.arc(
+			stroke.path[0].x,
+			stroke.path[0].y,
+			stroke.width / 2,
+			0,
+			Math.PI * 2,
+		)
+		ctx.fill()
+		ctx.restore()
+		return
+	}
+
+	ctx.moveTo(stroke.path[0].x, stroke.path[0].y)
+	for (let index = 1; index < stroke.path.length; index += 1) {
+		ctx.lineTo(stroke.path[index].x, stroke.path[index].y)
+	}
+	ctx.stroke()
+
+	ctx.restore()
+}
+
+/** 已提交笔画只在新增笔画时重绘一次，绘制过程中直接复用 */
+function getCommittedLayer(
+	cache: NonNullable<typeof paintCache>,
+	paints: TPaintStroke[],
+) {
+	if (cache.committedPaints === paints) {
+		return cache.committed
+	}
+
+	const ctx = cache.committed.getContext('2d', { colorSpace: 'display-p3' })!
+	ctx.clearRect(0, 0, cache.width, cache.height)
+
+	for (const stroke of paints) {
+		drawPaintStroke(ctx, stroke, cache.pixelated)
+	}
+
+	cache.committedPaints = paints
+
+	return cache.committed
+}
+
+function drawPaintLayers(
+	ctx: CanvasRenderingContext2D,
+	background: HTMLImageElement,
+	width: number,
+	height: number,
+	paints: TPaintStroke[],
+	current: TPaintStroke | null,
+) {
+	if (paints.length === 0 && !current) return
+
+	const cache = getPaintCache(background, width, height)
+	const committed = getCommittedLayer(cache, paints)
+	const frameCtx = cache.frame.getContext('2d', { colorSpace: 'display-p3' })!
+
+	frameCtx.clearRect(0, 0, width, height)
+	frameCtx.drawImage(committed, 0, 0)
+
+	if (current) {
+		drawPaintStroke(frameCtx, current, cache.pixelated)
+	}
+
+	ctx.drawImage(cache.frame, 0, 0)
+}
+
 /**
  * 从已合成标注的画布上按选区裁出设备像素图，
  * 主进程拿到的就是最终结果，不再二次截屏
@@ -132,13 +301,9 @@ export function drawCanvasImage(
 		color: string
 		width: number
 	} | null,
-	drawings: Array<{ path: Position[]; color: string; width: number }>,
-	currentDrawing: {
-		path: Position[]
-		color: string
-		width: number
-	} | null,
-	texts: TTextAnnotation[]
+	paints: TPaintStroke[],
+	currentPaint: TPaintStroke | null,
+	texts: TTextAnnotation[],
 ) {
 	const ctx = canvas.getContext('2d', { colorSpace: 'display-p3' })!
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -209,34 +374,15 @@ export function drawCanvasImage(
 		ctx.strokeRect(x, y, width, height)
 	}
 
-	// 绘制所有已保存的绘画（保持不变）
-	drawings.forEach(drawing => {
-		if (drawing.path.length < 2) return
-		ctx.strokeStyle = drawing.color
-		ctx.lineWidth = drawing.width
-		ctx.lineJoin = 'round'
-		ctx.lineCap = 'round'
-		ctx.beginPath()
-		ctx.moveTo(drawing.path[0].x, drawing.path[0].y)
-		for (let i = 1; i < drawing.path.length; i++) {
-			ctx.lineTo(drawing.path[i].x, drawing.path[i].y)
-		}
-		ctx.stroke()
-	})
-
-	// 绘制当前正在进行的绘画（保持不变）
-	if (currentDrawing && currentDrawing.path.length >= 2) {
-		ctx.strokeStyle = currentDrawing.color
-		ctx.lineWidth = currentDrawing.width
-		ctx.lineJoin = 'round'
-		ctx.lineCap = 'round'
-		ctx.beginPath()
-		ctx.moveTo(currentDrawing.path[0].x, currentDrawing.path[0].y)
-		for (let i = 1; i < currentDrawing.path.length; i++) {
-			ctx.lineTo(currentDrawing.path[i].x, currentDrawing.path[i].y)
-		}
-		ctx.stroke()
-	}
+	// 画笔 / 马赛克 / 橡皮擦压在同一条有序图层上，压在矩形之上、文字之下
+	drawPaintLayers(
+		ctx,
+		backgroundImage,
+		canvas.width,
+		canvas.height,
+		paints,
+		currentPaint,
+	)
 
 	// 绘制文字标注（最后绘制，保证压在图形之上）
 	texts.forEach(text => {

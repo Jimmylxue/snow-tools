@@ -6,6 +6,7 @@ import { initClipboard } from '../../biz/clipboard'
 import { NORMAL_SCREEN_SIZE, T_SCREEN_SIZE_TYPE } from '../../ipc/screen'
 import { VITE_DEV_SERVER_URL, RENDERER_DIST, is_mac } from '../../main'
 import { getCenterPositionBoundByRouter } from '../../utils/display'
+import { isCaptureSessionActive } from '../capturer/session'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -66,6 +67,7 @@ class MainWindow implements TWindows {
 			})
 
 			this.instance?.on('focus', () => {
+				if (isCaptureSessionActive()) return
 				this.instance?.setOpacity(1)
 				this.instance?.show()
 			})
@@ -89,6 +91,9 @@ class MainWindow implements TWindows {
 	}
 
 	show() {
+		/** 截屏期间任何路径都不允许启动器浮到遮罩上 */
+		if (isCaptureSessionActive()) return
+
 		const { x, y } = getCenterPositionBoundByRouter(this.routerName)
 		this.instance?.setBounds({
 			x,
@@ -102,6 +107,7 @@ class MainWindow implements TWindows {
 		})
 		// 确保窗口显示和焦点设置之间有足够的延迟
 		setTimeout(() => {
+			if (isCaptureSessionActive()) return
 			this.instance?.show()
 			this.instance?.focus()
 			this.instance?.webContents.send('window-shown')

@@ -5,6 +5,7 @@ import CapturePng from '@/assets/img/tool-capturer.png'
 import ClipboardPng from '@/assets/img/tool-clipboard.png'
 import SettingPng from '@/assets/img/tool-setting.png'
 import ImageHostingPng from '@/assets/img/tool-imageHosting.png'
+import HostsSvg from '@/assets/img/tool-hosts.svg'
 
 export const allTools: TTools[] = [
 	{
@@ -46,6 +47,14 @@ export const allTools: TTools[] = [
 		recommended: false,
 		iconUrl: ImageHostingPng,
 		routerName: 'imageHosting',
+	},
+	{
+		id: 7,
+		name: 'Hosts',
+		icon: '🌐',
+		recommended: true,
+		iconUrl: HostsSvg,
+		routerName: 'hosts',
 	},
 	{
 		id: 1,
