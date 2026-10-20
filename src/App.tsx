@@ -13,6 +13,7 @@ import { sendNavigateBack } from './hooks/ipc/window'
 import { SystemSetting } from './pages/setting'
 import { ImageHosting } from './pages/imageHosting'
 import { Hosts } from './pages/hosts'
+import { JsonTool } from './pages/jsonTool'
 
 function App() {
 	useClipBoardChange()
@@ -49,6 +50,7 @@ function App() {
 				<Route path="/setting" element={<SystemSetting />} />
 				<Route path="/imageHosting" element={<ImageHosting />} />
 				<Route path="/hosts" element={<Hosts />} />
+				<Route path="/jsonTool" element={<JsonTool />} />
 				<Route
 					path="*"
 					element={

@@ -11,6 +11,7 @@ export type TRouterPage =
 	| 'clipboard'
 	| 'imageHosting'
 	| 'hosts'
+	| 'jsonTool'
 
 type TRouterMap = {
 	[key in TRouterPage]: TWindows

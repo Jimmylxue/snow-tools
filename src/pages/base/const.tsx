@@ -6,6 +6,7 @@ import ClipboardPng from '@/assets/img/tool-clipboard.png'
 import SettingPng from '@/assets/img/tool-setting.png'
 import ImageHostingPng from '@/assets/img/tool-imageHosting.png'
 import HostsSvg from '@/assets/img/tool-hosts.svg'
+import JsonSvg from '@/assets/img/tool-json.svg'
 
 export const allTools: TTools[] = [
 	{
@@ -55,6 +56,14 @@ export const allTools: TTools[] = [
 		recommended: true,
 		iconUrl: HostsSvg,
 		routerName: 'hosts',
+	},
+	{
+		id: 8,
+		name: 'JSON',
+		icon: '{}',
+		recommended: true,
+		iconUrl: JsonSvg,
+		routerName: 'jsonTool',
 	},
 	{
 		id: 1,

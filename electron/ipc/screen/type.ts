@@ -9,6 +9,7 @@ enum ESCREEN_SIZE {
 	关于页面 = 'ABOUT',
 	图床页面 = 'IMAGE_HOSTING',
 	HOSTS页面 = 'HOSTS',
+	JSON工具页面 = 'JSON_TOOL',
 }
 
 export type T_SCREEN_SIZE_TYPE = `${ESCREEN_SIZE}`

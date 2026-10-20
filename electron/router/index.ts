@@ -11,14 +11,17 @@ import { clipboardWindow } from './clipboard'
 import { settingWindow } from './setting'
 import { imageHostingWindow } from './imageHosting'
 import { hostsWindow } from './hosts'
+import { jsonToolWindow } from './jsonTool'
 import { initApps } from '../biz/apps'
 import { initHosts } from '../biz/hosts'
 import { initAutoLaunch } from '../biz/autoLaunch'
+import { initJsonTool } from '../biz/jsonTool'
 
 export function initRouter(startHidden = false) {
 	initApps()
 	initHosts()
 	initAutoLaunch()
+	initJsonTool()
 
 	mainWindow.create()
 	capturerWindow.create()
@@ -29,6 +32,7 @@ export function initRouter(startHidden = false) {
 	settingWindow.create()
 	imageHostingWindow.create()
 	hostsWindow.create()
+	jsonToolWindow.create()
 
 	appTray.initTray(mainWindow.instance!)
 	navigate.register(
@@ -42,6 +46,7 @@ export function initRouter(startHidden = false) {
 			clipboard: clipboardWindow,
 			imageHosting: imageHostingWindow,
 			hosts: hostsWindow,
+			jsonTool: jsonToolWindow,
 		},
 		{ show: !startHidden },
 	)
