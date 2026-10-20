@@ -9,7 +9,14 @@ import { getLocalAppName } from './utils'
 
 const execFileAsync = promisify(execFile)
 
-const APP_DIRS = ['/Applications', path.join(os.homedir(), 'Applications')]
+const APP_DIRS = [
+	'/Applications',
+	path.join(os.homedir(), 'Applications'),
+	'/Applications/Utilities',
+	'/System/Applications',
+	'/System/Applications/Utilities',
+	'/System/Library/CoreServices/Applications',
+]
 const ICON_SIZE = 64
 /** 每个应用要起 PlistBuddy / mdls 进程，限制并发 */
 const READ_CONCURRENCY = 8

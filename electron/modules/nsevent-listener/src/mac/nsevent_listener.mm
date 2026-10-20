@@ -1,6 +1,72 @@
 
 #import <Cocoa/Cocoa.h>
 #import <napi.h>
+#include <dlfcn.h>
+
+const int kSpotlightHotKeyId = 64;
+
+typedef void (*CGSSetSymbolicHotKeyEnabledFn)(int, bool);
+typedef bool (*CGSIsSymbolicHotKeyEnabledFn)(int);
+
+static CGSSetSymbolicHotKeyEnabledFn getSetSymbolicHotKeyEnabledFn() {
+    static CGSSetSymbolicHotKeyEnabledFn fn = nullptr;
+    static bool tried = false;
+    if (!tried) {
+        tried = true;
+        void* handle = dlopen(
+            "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+            RTLD_LAZY
+        );
+        if (handle) {
+            fn = (CGSSetSymbolicHotKeyEnabledFn)dlsym(handle, "CGSSetSymbolicHotKeyEnabled");
+        }
+    }
+    return fn;
+}
+
+static CGSIsSymbolicHotKeyEnabledFn getIsSymbolicHotKeyEnabledFn() {
+    static CGSIsSymbolicHotKeyEnabledFn fn = nullptr;
+    static bool tried = false;
+    if (!tried) {
+        tried = true;
+        void* handle = dlopen(
+            "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+            RTLD_LAZY
+        );
+        if (handle) {
+            fn = (CGSIsSymbolicHotKeyEnabledFn)dlsym(handle, "CGSIsSymbolicHotKeyEnabled");
+        }
+    }
+    return fn;
+}
+
+Napi::Boolean IsSpotlightShortcutEnabled(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    CGSIsSymbolicHotKeyEnabledFn isEnabled = getIsSymbolicHotKeyEnabledFn();
+    if (!isEnabled) {
+        Napi::Error::New(env, "当前系统不支持读取聚焦搜索快捷键").ThrowAsJavaScriptException();
+        return Napi::Boolean::New(env, false);
+    }
+    return Napi::Boolean::New(env, isEnabled(kSpotlightHotKeyId));
+}
+
+Napi::Boolean SetSpotlightShortcutEnabled(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 1 || !info[0].IsBoolean()) {
+        Napi::TypeError::New(env, "需要传入布尔值").ThrowAsJavaScriptException();
+        return Napi::Boolean::New(env, false);
+    }
+
+    CGSSetSymbolicHotKeyEnabledFn setEnabled = getSetSymbolicHotKeyEnabledFn();
+    CGSIsSymbolicHotKeyEnabledFn isEnabled = getIsSymbolicHotKeyEnabledFn();
+    if (!setEnabled || !isEnabled) {
+        Napi::Error::New(env, "当前系统不支持修改聚焦搜索快捷键").ThrowAsJavaScriptException();
+        return Napi::Boolean::New(env, false);
+    }
+
+    setEnabled(kSpotlightHotKeyId, info[0].As<Napi::Boolean>().Value());
+    return Napi::Boolean::New(env, isEnabled(kSpotlightHotKeyId));
+}
 
 Napi::ThreadSafeFunction tsfn;
 id eventMonitor;
@@ -91,6 +157,8 @@ Napi::Boolean StopListening(const Napi::CallbackInfo& info) {
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set("startListening", Napi::Function::New(env, StartListening));
     exports.Set("stopListening", Napi::Function::New(env, StopListening));
+    exports.Set("isSpotlightShortcutEnabled", Napi::Function::New(env, IsSpotlightShortcutEnabled));
+    exports.Set("setSpotlightShortcutEnabled", Napi::Function::New(env, SetSpotlightShortcutEnabled));
     return exports;
 }
 

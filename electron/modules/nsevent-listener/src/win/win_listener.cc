@@ -76,9 +76,19 @@ Napi::Boolean StopListening(const Napi::CallbackInfo& info) {
     return Napi::Boolean::New(env, true);
 }
 
+Napi::Boolean IsSpotlightShortcutEnabled(const Napi::CallbackInfo& info) {
+    return Napi::Boolean::New(info.Env(), false);
+}
+
+Napi::Boolean SetSpotlightShortcutEnabled(const Napi::CallbackInfo& info) {
+    return Napi::Boolean::New(info.Env(), false);
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set("startListening", Napi::Function::New(env, StartListening));
     exports.Set("stopListening", Napi::Function::New(env, StopListening));
+    exports.Set("isSpotlightShortcutEnabled", Napi::Function::New(env, IsSpotlightShortcutEnabled));
+    exports.Set("setSpotlightShortcutEnabled", Napi::Function::New(env, SetSpotlightShortcutEnabled));
     return exports;
 }
 

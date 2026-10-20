@@ -3,8 +3,11 @@ import { TApp } from 'electron/biz/apps/type'
 import { allTools } from '../../const'
 import { SearchResult } from '../SearchResult'
 import { STool } from '../STool'
+import { CalcResult } from '../CalcResult'
 import { getIpc } from '@/hooks/ipc'
-import { sendRouterNavigate } from '@/hooks/ipc/window'
+import { sendNavigateBack, sendRouterNavigate } from '@/hooks/ipc/window'
+import { copyToClipboard } from '@/lib/utils'
+import { calculateExpression } from '../../utils/calculator'
 import LogoPng from '@/assets/img/logo.png'
 
 const ipc = getIpc()
@@ -62,6 +65,33 @@ export const SnowTools = () => {
 
 		return [...matchedTools, ...matchedApps]
 	}, [input, apps])
+
+	const calcResult = useMemo(() => {
+		const expression = input.trim()
+		if (!expression) return null
+
+		const keyword = expression.toUpperCase()
+		if (allTools.some(tool => tool.name.toUpperCase() === keyword)) {
+			return null
+		}
+		if (
+			apps.some(
+				app =>
+					app.appName.toUpperCase() === keyword ||
+					app.originAppName.toUpperCase() === keyword,
+			)
+		) {
+			return null
+		}
+
+		return calculateExpression(expression)
+	}, [input, apps])
+
+	const handleCopyCalculation = () => {
+		if (!calcResult) return
+		copyToClipboard(calcResult.value)
+		sendNavigateBack()
+	}
 
 	useEffect(() => {
 		const isShowSearchResult = input?.trim() !== ''
@@ -127,7 +157,19 @@ export const SnowTools = () => {
 							type="text"
 							value={input}
 							onChange={e => setInput(e.target.value)}
-							placeholder="Search tools & apps..."
+							onKeyDown={event => {
+								if (!calcResult || event.key !== 'Enter') return
+								if (
+									event.nativeEvent.isComposing ||
+									event.nativeEvent.keyCode === 229
+								) {
+									return
+								}
+								event.preventDefault()
+								event.stopPropagation()
+								handleCopyCalculation()
+							}}
+							placeholder="Search tools & apps... or 12*8"
 							autoFocus
 							className="w-full bg-white rounded-lg py-2.5 px-4 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all shadow-sm border border-gray-200 hover:border-blue-300"
 						/>
@@ -161,7 +203,22 @@ export const SnowTools = () => {
 						</div>
 					</>
 				) : (
-					<SearchResult searchResult={searchResult} />
+					<>
+						{calcResult && (
+							<CalcResult
+								expression={calcResult.expression}
+								value={calcResult.value}
+								onCopy={handleCopyCalculation}
+							/>
+						)}
+						{searchResult.length > 0 ? (
+							<SearchResult searchResult={searchResult} />
+						) : calcResult ? null : (
+							<div className="flex h-full items-center justify-center text-gray-400">
+								No results found
+							</div>
+						)}
+					</>
 				)}
 			</div>
 
@@ -170,9 +227,15 @@ export const SnowTools = () => {
 				<div>
 					{input.trim() === ''
 						? ` ${allTools.slice(0, 12).length} tools`
-						: `${searchResult.length} results`}
+						: calcResult
+							? '计算结果'
+							: `${searchResult.length} results`}
 				</div>
-				<div>↑↓←→ to navigate • Enter to open</div>
+				<div>
+					{calcResult
+						? 'Enter 复制结果 · 应用点击打开'
+						: '↑↓←→ to navigate • Enter to open'}
+				</div>
 			</div>
 		</div>
 	)

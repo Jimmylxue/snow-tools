@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { getIpc } from '@/hooks/ipc'
+import type { THotKeyRegisterFailedPayload } from 'electron/constant/hotkey/type'
 import { shortCutKeyMap } from './const'
 import { TShortCutUUKey } from './type'
 import { getKeyName } from './utils'
@@ -205,6 +206,28 @@ export function ShortCut({ label, description, shortCutUUKey }: TProps) {
 			}
 		}
 	}, [keys.completed])
+
+	useEffect(() => {
+		const handleRegisterFailed = (
+			_: unknown,
+			payload: THotKeyRegisterFailedPayload,
+		) => {
+			if (payload?.type !== shortCutUUKey) return
+
+			const blockedBySpotlight =
+				isMacPlatform() && payload.hotkey === 'Command+Space'
+			toast.error(
+				blockedBySpotlight
+					? '⌘Space 可能被系统聚焦搜索占用，请先在系统设置中关闭该快捷键'
+					: `快捷键 ${payload.hotkey} 注册失败，可能已被系统或其它应用占用`,
+			)
+		}
+
+		ipc.on('HOT_KEY_REGISTER_FAILED', handleRegisterFailed)
+		return () => {
+			ipc.off('HOT_KEY_REGISTER_FAILED', handleRegisterFailed)
+		}
+	}, [shortCutUUKey])
 
 	return (
 		<div className="flex items-center justify-between gap-4 py-3">

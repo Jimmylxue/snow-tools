@@ -3,9 +3,12 @@ import { Button } from '@/components/ui/button'
 import { sendNavigateBack } from '@/hooks/ipc/window'
 import { AutoLaunch } from './components/AutoLaunch'
 import { ShortCut } from './components/ShortCut'
+import { SpotlightShortcut } from './components/SpotlightShortcut'
 import { Separator } from './components/Separator'
 
 export function SystemSetting() {
+	const isMac = navigator.platform.includes('Mac')
+
 	return (
 		<div className="flex h-screen w-screen flex-col bg-slate-50 text-slate-800">
 			<header className="flex items-start justify-between border-b border-slate-200 bg-white px-6 py-4">
@@ -51,6 +54,12 @@ export function SystemSetting() {
 						description="直接进入区域截屏"
 						shortCutUUKey="CAPTURER"
 					/>
+					{isMac && (
+						<>
+							<Separator />
+							<SpotlightShortcut />
+						</>
+					)}
 				</section>
 			</div>
 

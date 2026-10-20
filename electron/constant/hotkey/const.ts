@@ -6,3 +6,4 @@ export enum EHOT_KET {
 }
 
 export const HOT_KEY_EVENT_NAME = 'HOT_KEY_EVENT'
+export const HOT_KEY_REGISTER_FAILED = 'HOT_KEY_REGISTER_FAILED'

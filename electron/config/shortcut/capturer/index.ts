@@ -1,6 +1,9 @@
 import { globalShortcut, ipcMain } from 'electron'
 import { EShortCutKey, TShortCut } from '../type'
-import { getLocalStorageHotKeyByKeyName } from '../utils'
+import {
+	getLocalStorageHotKeyByKeyName,
+	notifyHotKeyRegisterFailed,
+} from '../utils'
 import { navigate } from '../../../router/core'
 
 class CapturerShortCut implements TShortCut {
@@ -33,20 +36,26 @@ class CapturerShortCut implements TShortCut {
 
 		if (this.currentHotKey) {
 			globalShortcut.unregister(this.currentHotKey)
+			this.currentHotKey = ''
 		}
 		const window = navigate.routerMap!.capturer
-		const windowInstance = window.instance!
 		try {
-			globalShortcut.register(hotkey, window.shortcutCallback)
+			const registered = globalShortcut.register(
+				hotkey,
+				window.shortcutCallback,
+			)
+
+			if (!registered) {
+				console.error(`Failed to register hotkey: ${hotkey}`)
+				notifyHotKeyRegisterFailed({ type: 'CAPTURER', hotkey })
+				return
+			}
+
 			this.currentHotKey = hotkey
 			console.log(`Capturer Hotkey updated to: ${hotkey}`)
 		} catch (error) {
 			console.error('Failed to register hotkey:', error)
-			// 可以在这里通知渲染进程注册失败
-			windowInstance?.webContents.send(
-				'hotkey-register-capturer_failed',
-				hotkey
-			)
+			notifyHotKeyRegisterFailed({ type: 'CAPTURER', hotkey })
 		}
 	}
 

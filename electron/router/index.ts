@@ -16,12 +16,14 @@ import { initApps } from '../biz/apps'
 import { initHosts } from '../biz/hosts'
 import { initAutoLaunch } from '../biz/autoLaunch'
 import { initJsonTool } from '../biz/jsonTool'
+import { initSpotlight } from '../biz/spotlight'
 
 export function initRouter(startHidden = false) {
 	initApps()
 	initHosts()
 	initAutoLaunch()
 	initJsonTool()
+	initSpotlight()
 
 	mainWindow.create()
 	capturerWindow.create()
