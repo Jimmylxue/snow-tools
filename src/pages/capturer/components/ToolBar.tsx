@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
 	Check,
 	Eraser,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { SelectionRect, TAbsolutePosition, Tool } from '../type'
 import { TCapturerMessage } from '../oberver'
+import { getSelectionBounds } from '../utils/selection'
 
 type TProps = {
 	activeState: string
@@ -43,6 +44,10 @@ type TProps = {
 	eraserWidth: number
 	onEraserWidthChange: (width: number) => void
 	source?: TCapturerMessage
+	/** 拖动/缩放选区期间禁用交互，避免工具栏挡在光标下误触按钮 */
+	interactive: boolean
+	/** 是否展示工具栏本体；拖动选区时传 false，松手后再显示 */
+	visible: boolean
 }
 
 const TOOL_BUTTONS: Array<{
@@ -175,8 +180,9 @@ export function ToolBar({
 	eraserWidth,
 	onEraserWidthChange,
 	source,
+	interactive,
+	visible,
 }: TProps) {
-	const [position, setPosition] = useState<TAbsolutePosition>()
 	const toolbarRef = useRef<HTMLDivElement>(null)
 
 	const [toolbarSize, setToolbarSize] = useState({
@@ -195,56 +201,65 @@ export function ToolBar({
 		item => item.tool === activeState,
 	)
 
-	// 动态计算工具栏尺寸
-	useEffect(() => {
-		if (toolbarRef.current && show) {
-			const { width, height } = toolbarRef.current.getBoundingClientRect()
-			setToolbarSize({
-				width: Math.ceil(width),
-				height: Math.ceil(height),
-			})
-		}
+	/**
+	 * 动态计算工具栏尺寸。
+	 * 必须用 layoutEffect：尺寸一出来就要赶在同一帧里把位置定好，
+	 * 否则工具栏会先在默认位置露一帧，再"跳"到正确位置。
+	 */
+	useLayoutEffect(() => {
+		if (!toolbarRef.current || !show) return
+
+		const { width, height } = toolbarRef.current.getBoundingClientRect()
+
+		setToolbarSize(prev =>
+			prev.width === Math.ceil(width) && prev.height === Math.ceil(height)
+				? prev
+				: { width: Math.ceil(width), height: Math.ceil(height) },
+		)
 	}, [show])
 
-	// 定位计算
-	useEffect(() => {
-		if (selection && containerRect && toolbarSize.width > 0 && source) {
-			const { start, end } = selection
-			const selectionBottom = Math.max(
-				start.y / source.scaleFactor,
-				end.y / source.scaleFactor,
-			)
-			const selectionTop = Math.min(
-				start.y / source.scaleFactor,
-				end.y / source.scaleFactor,
-			)
-
-			// 计算可用空间
-			const spaceBelow = containerRect.height - selectionBottom - margin
-			const spaceAbove = selectionTop - margin
-
-			// 决定显示位置（优先下方，然后上方，最后选区内部）
-			let top: number
-			let left = start.x / source.scaleFactor
-
-			if (spaceBelow >= toolbarSize.height) {
-				top = selectionBottom + margin // 下方
-			} else if (spaceAbove >= toolbarSize.height) {
-				top = selectionTop - toolbarSize.height - margin // 上方
-			} else {
-				top = selectionTop + margin // 选区内部
-			}
-
-			// 水平位置调整（确保不超出容器）
-			const maxLeft = containerRect.width - toolbarSize.width
-			if (left > maxLeft) {
-				left = maxLeft
-			} else if (left < 0) {
-				left = 0
-			}
-
-			setPosition({ top, left })
+	/**
+	 * 定位在渲染期同步算出来，不再经过 useState + useEffect。
+	 * 之前是 effect 里 setState，位置永远比选区慢一帧，
+	 * 拖动选区时就会看到工具栏"追着跑"的延迟感。
+	 */
+	const position = useMemo<TAbsolutePosition | undefined>(() => {
+		if (!selection || !containerRect || toolbarSize.width <= 0 || !source) {
+			return undefined
 		}
+
+		/** 用归一化后的边界，反向框选 / 拖动选区时工具栏才会跟着正确的一侧走 */
+		const bounds = getSelectionBounds(selection)
+		const selectionLeft = bounds.left / source.scaleFactor
+		const selectionRight = (bounds.left + bounds.width) / source.scaleFactor
+		const selectionBottom = (bounds.top + bounds.height) / source.scaleFactor
+		const selectionTop = bounds.top / source.scaleFactor
+
+		// 计算可用空间
+		const spaceBelow = containerRect.height - selectionBottom - margin
+		const spaceAbove = selectionTop - margin
+
+		// 决定显示位置（优先下方，然后上方，最后选区内部）
+		let top: number
+
+		if (spaceBelow >= toolbarSize.height) {
+			top = selectionBottom + margin // 下方
+		} else if (spaceAbove >= toolbarSize.height) {
+			top = selectionTop - toolbarSize.height - margin // 上方
+		} else {
+			top = selectionTop + margin // 选区内部
+		}
+
+		// 水平位置调整（确保不超出容器）
+		let left = Math.min(selectionLeft, selectionRight)
+		const maxLeft = containerRect.width - toolbarSize.width
+		if (left > maxLeft) {
+			left = maxLeft
+		} else if (left < 0) {
+			left = 0
+		}
+
+		return { top, left }
 	}, [selection, containerRect, toolbarSize, source])
 
 	/** 面板挂在激活的工具按钮下方，并保证不出工具栏右边界 */
@@ -256,16 +271,26 @@ export function ToolBar({
 		),
 	)
 
+	/** 拖动 / 缩放选区时把工具栏收起来，松手后再淡入（见下方 style 注释） */
+	const toolbarVisible = show && visible
+
 	return (
 		<div
 			ref={toolbarRef}
-			className={`fixed flex items-center gap-1 shrink-0 whitespace-nowrap bg-[#2C2C2C] px-2 py-1.5 rounded-lg shadow-xl z-50 border border-[#3D3D3D] transition-all
-        ${show ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+			className="fixed flex items-center gap-1 shrink-0 whitespace-nowrap bg-[#2C2C2C] px-2 py-1.5 rounded-lg shadow-xl z-50 border border-[#3D3D3D]"
 			style={{
 				left: `${position?.left ?? -9999}px`,
 				top: `${position?.top ?? -9999}px`,
-				// 使用内联样式确保初始渲染时有正确尺寸
+				// 使用内联样式确保初始渲染时有正确尺寸；opacity 为 0 时仍可测量
 				visibility: show ? 'visible' : 'hidden',
+				pointerEvents: toolbarVisible && interactive ? 'auto' : 'none',
+				/**
+				 * 隐藏必须瞬时生效：拖动刚开始就立刻消失，
+				 * 不能留半透明残影在屏幕上跟着选区漂。
+				 * 出现时给 120ms 淡入，观感更柔和。
+				 */
+				opacity: toolbarVisible ? 1 : 0,
+				transition: toolbarVisible ? 'opacity 120ms ease-out' : 'none',
 			}}
 		>
 			{TOOL_BUTTONS.map(tool => (

@@ -12,6 +12,9 @@ import {
 	TCurrentMouseInfo,
 	TPaintStroke,
 	Tool,
+	TSelectionBounds,
+	TSelectionDrag,
+	TSelectionHandle,
 	TTextAnnotation,
 	TTextTransform,
 } from './type'
@@ -34,6 +37,13 @@ import {
 	CAPTURER_TEXT_LINE_HEIGHT,
 } from './utils/canvas'
 import { getScaledPosition } from './utils/utils'
+import {
+	getSelectionBounds,
+	getSelectionHandleCursor,
+	moveSelection,
+	resizeSelection,
+	selectionFromBounds,
+} from './utils/selection'
 
 const ipc = getIpc()
 
@@ -83,9 +93,15 @@ export function Capturer() {
 	const [selectedTextIndex, setSelectedTextIndex] = useState<number | null>(
 		null,
 	)
+	/** 正在拖动选区（移动）或拖动缩放手柄（resize），null 表示没在拖 */
+	const [selectionDrag, setSelectionDrag] = useState<TSelectionDrag | null>(
+		null,
+	)
 	const textInputRef = useRef<HTMLTextAreaElement>(null)
 
 	const visibleCanvasRef = useRef<HTMLCanvasElement>(null)
+	/** 在已确认选区外重新框选时，暂存旧选区：误点松开后可以还原 */
+	const restoreSelectionRef = useRef<SelectionRect | null>(null)
 	const mouseInfoFrameRef = useRef<number | null>(null)
 	const latestMouseInfoRef = useRef<TCurrentMouseInfo>()
 	const drawFrameRef = useRef<number | null>(null)
@@ -127,6 +143,8 @@ export function Capturer() {
 			setTextDraft('')
 			setTextTransform(null)
 			setSelectedTextIndex(null)
+			setSelectionDrag(null)
+			restoreSelectionRef.current = null
 		})
 	}, [])
 
@@ -137,6 +155,8 @@ export function Capturer() {
 		setShowTools(false)
 		setPaints([])
 		setCurrentPaint(null)
+		setSelectionDrag(null)
+		restoreSelectionRef.current = null
 	}, [])
 
 	useEffect(() => {
@@ -277,6 +297,101 @@ export function Capturer() {
 		})
 	}
 
+	/** 在选区内部按下：整块拖动选区，尺寸不变 */
+	const startSelectionMove = useCallback(
+		(originX: number, originY: number, bounds: TSelectionBounds) => {
+			setSelectionDrag({ mode: 'move', bounds, originX, originY })
+		},
+		[],
+	)
+
+	/** 拖某个手柄：只改对应的边或角 */
+	const startSelectionResize = useCallback(
+		(handle: TSelectionHandle, e: React.MouseEvent) => {
+			/** 只响应左键，右键菜单/中键不参与缩放 */
+			if (!selection || e.button !== 0) return
+
+			e.preventDefault()
+			e.stopPropagation()
+
+			const { x, y } = getScaledPosition(e, visibleCanvasRef.current)
+
+			setSelectionDrag({
+				mode: 'resize',
+				handle,
+				bounds: getSelectionBounds(selection),
+				originX: x,
+				originY: y,
+			})
+		},
+		[selection],
+	)
+
+	/**
+	 * 拖动中的鼠标可能在画布外（工具栏、屏幕边缘）松开，
+	 * 所以整个拖动期间把 move / up 挂到 window 上，避免选区卡在跟随状态
+	 */
+	useEffect(() => {
+		if (!selectionDrag) return
+
+		const canvas = visibleCanvasRef.current
+		if (!canvas) return
+
+		const canvasSize = { width: canvas.width, height: canvas.height }
+
+		const handleMove = (event: MouseEvent) => {
+			/** 在窗口外松开时收不到 mouseup，靠按键状态自愈，否则选区会一直跟着光标跑 */
+			if (event.buttons === 0) {
+				setSelectionDrag(null)
+				return
+			}
+
+			const { x, y } = getScaledPosition(event, canvas)
+			const dx = x - selectionDrag.originX
+			const dy = y - selectionDrag.originY
+
+			if (selectionDrag.mode === 'move') {
+				setSelection(
+					moveSelection(selectionDrag.bounds, dx, dy, canvasSize),
+				)
+				return
+			}
+
+			setSelection(
+				resizeSelection(
+					selectionDrag.bounds,
+					selectionDrag.handle,
+					dx,
+					dy,
+					canvasSize,
+					{ keepRatio: event.shiftKey },
+				),
+			)
+		}
+
+		const handleUp = () => setSelectionDrag(null)
+
+		/**
+		 * 拖动期间光标可能离开选区（拖到屏幕边缘），
+		 * 临时把整个 body 的光标锁成当前操作的光标，手感更稳
+		 */
+		const cursor =
+			selectionDrag.mode === 'move'
+				? 'grabbing'
+				: getSelectionHandleCursor(selectionDrag.handle)
+		const previousCursor = document.body.style.cursor
+		document.body.style.cursor = cursor
+
+		window.addEventListener('mousemove', handleMove)
+		window.addEventListener('mouseup', handleUp)
+
+		return () => {
+			document.body.style.cursor = previousCursor
+			window.removeEventListener('mousemove', handleMove)
+			window.removeEventListener('mouseup', handleUp)
+		}
+	}, [selectionDrag])
+
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
 			if (!isSelecting) return
@@ -294,7 +409,32 @@ export function Capturer() {
 			}
 
 			if (activeTool === 'select') {
-				if (showTools) return
+				if (showTools) {
+					if (!selection) return
+
+					const bounds = getSelectionBounds(selection)
+					const inside =
+						x >= bounds.left &&
+						x <= bounds.left + bounds.width &&
+						y >= bounds.top &&
+						y <= bounds.top + bounds.height
+
+					/** 选区内部按下：整块拖动选区，尺寸不变 */
+					if (inside) {
+						e.preventDefault()
+						startSelectionMove(x, y, bounds)
+						return
+					}
+
+					/**
+					 * 选区外按下：重新拉一个选区，和常见截屏工具一致。
+					 * 旧选区先存起来，如果只是误点（拖动范围不足 10px）
+					 * 松手时再还原，不会白白丢掉已经画好的标注。
+					 */
+					restoreSelectionRef.current = selection
+					setShowTools(false)
+				}
+
 				setSelection({
 					start: { x, y },
 					end: { x, y },
@@ -335,11 +475,13 @@ export function Capturer() {
 			isSelecting,
 			activeTool,
 			showTools,
+			selection,
 			drawColor,
 			drawWidth,
 			commitEditingText,
 			mosaicWidth,
 			eraserWidth,
+			startSelectionMove,
 		],
 	)
 
@@ -470,12 +612,25 @@ export function Capturer() {
 	)
 
 	const handleMouseUp = useCallback(() => {
-		if (isSelecting && selection && activeTool === 'select') {
+		/** 选区已确认后，鼠标抬起只结束拖动/缩放，不再重新判定框选有效性 */
+		if (
+			isSelecting &&
+			selection &&
+			activeTool === 'select' &&
+			!showTools &&
+			!selectionDrag
+		) {
 			const { start, end } = selection
 			const width = Math.abs(end.x - start.x)
 			const height = Math.abs(end.y - start.y)
 
 			if (width > 10 && height > 10) {
+				restoreSelectionRef.current = null
+				setShowTools(true)
+			} else if (restoreSelectionRef.current) {
+				/** 重新框选的拖动距离太小，判定为误点，还原上一次的选区 */
+				setSelection(restoreSelectionRef.current)
+				restoreSelectionRef.current = null
 				setShowTools(true)
 			} else {
 				setSelection(null)
@@ -507,6 +662,8 @@ export function Capturer() {
 		drawing,
 		currentPaint,
 		currentRectangle,
+		showTools,
+		selectionDrag,
 	])
 
 	const completeSelection = useCallback(
@@ -686,6 +843,14 @@ export function Capturer() {
 			if (event.key === 'Escape') {
 				setTextTransform(null)
 				setSelectedTextIndex(null)
+
+				/** 正在拖动选区时，Esc 只撤销这次拖动，选区回到按下前的样子 */
+				if (selectionDrag) {
+					setSelection(selectionFromBounds(selectionDrag.bounds))
+					setSelectionDrag(null)
+					return
+				}
+
 				if (editingText) {
 					setEditingText(null)
 					setTextDraft('')
@@ -727,11 +892,62 @@ export function Capturer() {
 				)
 				setSelectedTextIndex(null)
 				setTextTransform(null)
+			} else if (
+				(event.key === 'ArrowUp' ||
+					event.key === 'ArrowDown' ||
+					event.key === 'ArrowLeft' ||
+					event.key === 'ArrowRight') &&
+				!editingText &&
+				showTools &&
+				selection &&
+				activeTool === 'select'
+			) {
+				/**
+				 * 方向键微调选区位置：按住 Shift 每次 10px，否则 1px。
+				 * 步长按画布设备像素取整后至少 1px，1x 屏上不会被取整成 0。
+				 */
+				event.preventDefault()
+
+				const canvas = visibleCanvasRef.current
+				if (!canvas) return
+
+				const factor = source?.scaleFactor ?? 1
+				const step = Math.max(1, Math.round((event.shiftKey ? 10 : 1) * factor))
+				const dx =
+					event.key === 'ArrowLeft'
+						? -step
+						: event.key === 'ArrowRight'
+							? step
+							: 0
+				const dy =
+					event.key === 'ArrowUp'
+						? -step
+						: event.key === 'ArrowDown'
+							? step
+							: 0
+
+				setSelection(
+					moveSelection(
+						getSelectionBounds(selection),
+						dx,
+						dy,
+						{ width: canvas.width, height: canvas.height },
+					),
+				)
 			}
 		}
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [selection, showTools, saveScreenshot, editingText, selectedTextIndex])
+	}, [
+		selection,
+		showTools,
+		saveScreenshot,
+		editingText,
+		selectedTextIndex,
+		activeTool,
+		source,
+		selectionDrag,
+	])
 
 	/**
 	 * 输入框按内容自适应，否则会把整行都盖住，挡住画布上已提交文字的点击
@@ -767,6 +983,31 @@ export function Capturer() {
 			currentMouseInfo.y >= selectionBounds.top &&
 			currentMouseInfo.y <= selectionBounds.bottom)
 
+	/** 选区已确认且鼠标停在选区内：光标提示「可以整块拖动」 */
+	const canDragSelection =
+		activeTool === 'select' && showTools && !!cursorInsideSelection
+
+	/** 拖动选区 / 手柄期间，整个画布保持当前操作的光标，拖出选区也不会跳回箭头 */
+	const dragCursor = selectionDrag
+		? selectionDrag.mode === 'move'
+			? 'grabbing'
+			: getSelectionHandleCursor(selectionDrag.handle)
+		: null
+
+	const selectionCursor = dragCursor
+		? dragCursor
+		: !showTools
+			? 'crosshair'
+			: canDragSelection
+				? 'move'
+				: 'default'
+
+	const canvasCursor = isBrushTool
+		? 'none'
+		: activeTool === 'text'
+			? 'text'
+			: selectionCursor
+
 	return (
 		<div
 			ref={containerRef}
@@ -784,13 +1025,7 @@ export function Capturer() {
 						onMouseLeave={() => setIsHoveringCanvas(false)}
 						draggable={false}
 						style={{
-							cursor: isBrushTool
-								? 'none'
-								: activeTool === 'text'
-									? 'text'
-									: !showTools
-										? 'crosshair'
-										: 'default',
+							cursor: canvasCursor,
 						}}
 					/>
 					{activeTool === 'text' &&
@@ -882,6 +1117,9 @@ export function Capturer() {
 								selection={selection}
 								showTools={showTools}
 								canvas={visibleCanvasRef?.current}
+								scaleFactor={source.scaleFactor}
+								interactive={activeTool === 'select'}
+								onResizeStart={startSelectionResize}
 							/>
 							<SelectionSize
 								selection={selection}
@@ -936,6 +1174,8 @@ export function Capturer() {
 				onFontSizeChange={setFontSize}
 				onWidthChange={setDrawWidth}
 				source={source}
+				interactive={!selectionDrag}
+				visible={!selectionDrag}
 				onTriggerEvent={status => {
 					switch (status) {
 						case 'RESET':
