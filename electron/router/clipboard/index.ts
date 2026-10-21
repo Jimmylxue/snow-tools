@@ -123,6 +123,12 @@ class ClipboardWindow implements TWindows {
 		this.instance?.setOpacity(1)
 		this.instance?.show()
 		this.instance?.focus()
+
+		/**
+		 * 窗口是常驻的，show 只是显示，React 不会重新挂载。
+		 * 不通知渲染层重新查询的话，面板会一直停在打开应用那一刻的数据。
+		 */
+		this.instance?.webContents.send('CLIPBOARD_WINDOW_SHOWN')
 	}
 
 	close() {

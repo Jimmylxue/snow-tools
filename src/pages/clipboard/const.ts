@@ -15,6 +15,12 @@ export const clipboardFilterArr: {
 		},
 	},
 	{
+		text: '图片',
+		queryValue: {
+			type: 'IMAGE',
+		},
+	},
+	{
 		text: '收藏',
 		queryValue: {
 			isCollect: true,

@@ -2,7 +2,7 @@ import { BrowserWindow, systemPreferences } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
-import { initClipboard } from '../../biz/clipboard'
+import { initClipboard, startClipboardPolling } from '../../biz/clipboard'
 import { NORMAL_SCREEN_SIZE, T_SCREEN_SIZE_TYPE } from '../../ipc/screen'
 import { VITE_DEV_SERVER_URL, RENDERER_DIST, is_mac } from '../../main'
 import { getCenterPositionBoundByRouter } from '../../utils/display'
@@ -51,6 +51,13 @@ class MainWindow implements TWindows {
 			if (import.meta.env.VITE_APP_OPEN_DEV_TOOLS === 'true') {
 				this.instance?.webContents.openDevTools()
 			}
+			/**
+			 * 轮询只需要读剪贴板，不需要辅助功能权限，
+			 * 所以放在权限判断之外无条件启动：
+			 * 否则未授权时连复制的文本和截图都记不下来。
+			 */
+			startClipboardPolling(this.instance!)
+
 			if (!is_mac) {
 				initClipboard(this.instance!)
 			} else {

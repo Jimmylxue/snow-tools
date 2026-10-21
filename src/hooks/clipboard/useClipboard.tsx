@@ -19,18 +19,40 @@ export function useClipboard({ queryParams }: TParams) {
 
 	const { queryClipBoard } = useClipboardDB()
 
+	/**
+	 * queryClipBoard 由 useClipboardDB 每次渲染重新创建，
+	 * 直接进依赖会让 initQuery 失去稳定性，这里用 ref 固定住真正的实现。
+	 */
+	const queryClipBoardRef = useRef(queryClipBoard)
+	queryClipBoardRef.current = queryClipBoard
+
 	const initQuery = useCallback(async () => {
-		const res = await queryClipBoard({
+		const res = await queryClipBoardRef.current({
 			..._queryParams.current,
 			page: page.current,
 			pageSize,
 		})
 		setQueryData(res)
-	}, [page, pageSize, queryClipBoard])
+	}, [pageSize])
+
+	/**
+	 * 重新拉取当前筛选条件下的数据，并回到第一页。
+	 * 窗口重新显示、或监听到新内容时都要走这里，
+	 * 否则面板会一直停在上次打开时的结果。
+	 */
+	const refresh = useCallback(async () => {
+		page.current = 1
+		const res = await queryClipBoardRef.current({
+			..._queryParams.current,
+			page: 1,
+			pageSize,
+		})
+		setQueryData(res)
+	}, [pageSize])
 
 	useEffect(() => {
-		initQuery()
-	}, [])
+		void initQuery()
+	}, [initQuery])
 
 	const fetchNextPage = async () => {
 		page.current = page.current + 1
@@ -54,12 +76,13 @@ export function useClipboard({ queryParams }: TParams) {
 		setQueryData(undefined)
 		_queryParams.current = params
 		page.current = 1
-		initQuery()
+		void initQuery()
 	}
 
 	return {
 		queryData,
 		fetchNextPage,
 		updateQueryParams,
+		refresh,
 	}
 }

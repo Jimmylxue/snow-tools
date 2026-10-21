@@ -19,6 +19,12 @@ clipboardDb.version(1).stores({
 	items: '++id, content, type, createdTime, isCollect', // 主键是自增的id
 })
 
+/**
+ * 文本保留 3 天；图片另外受体积与张数上限约束（见主进程 images.ts）。
+ * 两种策略都不会删收藏项。
+ */
+const TEXT_RETENTION_MS = 3 * 24 * 60 * 60 * 1000
+
 export function useClipboardDB() {
 	const [page, setPage] = useState<number>(1)
 
@@ -84,7 +90,9 @@ export function useClipboardDB() {
 				item => item.isCollect === otherSearchParam.isCollect
 			)
 		}
-		// 添加其他可能的条件...
+		if (otherSearchParam.type) {
+			query = query.filter(item => item.type === otherSearchParam.type)
+		}
 
 		const total = await query.clone().count()
 		const items = await query
@@ -95,20 +103,22 @@ export function useClipboardDB() {
 		return { items, total }
 	}
 
+	/** 清理过期记录；收藏项始终保留 */
+	const deleteExpiredRecords = async () => {
+		const expireBefore = Date.now() - TEXT_RETENTION_MS
+
+		await clipboardDb.items
+			.where('createdTime')
+			.below(expireBefore)
+			.filter(item => !item.isCollect)
+			.delete()
+	}
+
 	useEffect(() => {
-		/**
-		 * 删除三天前的 所有数据 应该怎么写
-		 */
-		const deleteOldData = async () => {
-			const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
-			await clipboardDb.items.where('createdTime').below(threeDaysAgo).delete()
-		}
+		// 每天执行一次清理，首次加载时也跑一遍
+		const interval = setInterval(deleteExpiredRecords, 24 * 60 * 60 * 1000)
 
-		// 每天执行一次清理
-		const interval = setInterval(deleteOldData, 24 * 60 * 60 * 1000)
-
-		// 首次加载时执行一次
-		deleteOldData()
+		deleteExpiredRecords()
 
 		return () => {
 			clearInterval(interval)
@@ -122,5 +132,6 @@ export function useClipboardDB() {
 		updateClipBoard,
 		deleteClipBoard,
 		queryClipBoard,
+		deleteExpiredRecords,
 	}
 }
