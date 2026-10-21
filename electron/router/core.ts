@@ -12,6 +12,11 @@ export type TRouterPage =
 	| 'imageHosting'
 	| 'hosts'
 	| 'jsonTool'
+	| 'timestamp'
+	| 'radix'
+	| 'colorConvert'
+	| 'base64Tool'
+	| 'hashTool'
 
 type TRouterMap = {
 	[key in TRouterPage]: TWindows

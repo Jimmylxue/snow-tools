@@ -14,6 +14,7 @@ import { SystemSetting } from './pages/setting'
 import { ImageHosting } from './pages/imageHosting'
 import { Hosts } from './pages/hosts'
 import { JsonTool } from './pages/jsonTool'
+import { DevTools } from './pages/devTools'
 
 function App() {
 	useClipBoardChange()
@@ -51,6 +52,11 @@ function App() {
 				<Route path="/imageHosting" element={<ImageHosting />} />
 				<Route path="/hosts" element={<Hosts />} />
 				<Route path="/jsonTool" element={<JsonTool />} />
+				<Route path="/timestamp" element={<DevTools category="timestamp" />} />
+				<Route path="/radix" element={<DevTools category="radix" />} />
+				<Route path="/colorConvert" element={<DevTools category="color" />} />
+				<Route path="/base64Tool" element={<DevTools category="base64" />} />
+				<Route path="/hashTool" element={<DevTools category="hash" />} />
 				<Route
 					path="*"
 					element={

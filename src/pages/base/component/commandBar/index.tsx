@@ -7,13 +7,18 @@ import { CalcResult } from '../CalcResult'
 import { getIpc } from '@/hooks/ipc'
 import { sendNavigateBack, sendRouterNavigate } from '@/hooks/ipc/window'
 import { copyToClipboard } from '@/lib/utils'
-import { calculateExpression } from '../../utils/calculator'
+import { resolveInputTool } from '../../utils/inputTool'
 import LogoPng from '@/assets/img/logo.png'
 
 const ipc = getIpc()
 
 /** 应用数量可能很多，限制一次展示条数 */
 const MAX_APP_RESULTS = 60
+
+/** 首页网格的列数与最多展示的工具数，渲染和键盘导航必须一致 */
+const GRID_COLUMNS = 6
+const MAX_VISIBLE_TOOLS = 18
+const visibleTools = allTools.slice(0, MAX_VISIBLE_TOOLS)
 
 export const SnowTools = () => {
 	const [input, setInput] = useState('')
@@ -66,6 +71,10 @@ export const SnowTools = () => {
 		return [...matchedTools, ...matchedApps]
 	}, [input, apps])
 
+	/**
+	 * 输入即工具：时间戳 / 进制 / 颜色 / Base64 / 哈希 / 算式 统一走这里。
+	 * 命中同名工具或应用时不抢结果，让搜索优先。
+	 */
 	const calcResult = useMemo(() => {
 		const expression = input.trim()
 		if (!expression) return null
@@ -84,7 +93,7 @@ export const SnowTools = () => {
 			return null
 		}
 
-		return calculateExpression(expression)
+		return resolveInputTool(expression)
 	}, [input, apps])
 
 	const handleCopyCalculation = () => {
@@ -93,11 +102,17 @@ export const SnowTools = () => {
 		sendNavigateBack()
 	}
 
+	/** 复制附加行时也收起面板，和主结果的交互保持一致 */
+	const handleCopyRow = (value: string) => {
+		copyToClipboard(value)
+		sendNavigateBack()
+	}
+
 	useEffect(() => {
 		const isShowSearchResult = input?.trim() !== ''
 		const handleKeyDown = (e: KeyboardEvent) => {
-			const cols = 6 // Number of columns in grid
-			const displayedTools = allTools
+			const cols = GRID_COLUMNS
+			const displayedTools = visibleTools
 			const totalItems = displayedTools.length
 
 			if (
@@ -187,13 +202,13 @@ export const SnowTools = () => {
 			<div ref={gridRef} className="flex-1 overflow-y-auto">
 				{input.trim() === '' ? (
 					<>
-						{/* All tools section (2 rows max) */}
+						{/* All tools section（工具变多后允许换行，超出部分在容器内滚动） */}
 						<div className="px-4 pt-3 pb-1 text-xs font-medium text-gray-500">
 							All Tools
 						</div>
 						<div className="px-3 mt-1">
 							<div className="grid grid-cols-6 gap-2">
-								{allTools.slice(0, 12).map((tool, index) => {
+								{visibleTools.map((tool, index) => {
 									const isSelected = index === selectedIndex
 									return (
 										<STool key={index} isSelected={isSelected} stool={tool} />
@@ -206,9 +221,9 @@ export const SnowTools = () => {
 					<>
 						{calcResult && (
 							<CalcResult
-								expression={calcResult.expression}
-								value={calcResult.value}
+								result={calcResult}
 								onCopy={handleCopyCalculation}
+								onCopyRow={handleCopyRow}
 							/>
 						)}
 						{searchResult.length > 0 ? (
@@ -226,14 +241,16 @@ export const SnowTools = () => {
 			<div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-100">
 				<div>
 					{input.trim() === ''
-						? ` ${allTools.slice(0, 12).length} tools`
+						? ` ${visibleTools.length} tools`
 						: calcResult
-							? '计算结果'
+							? calcResult.kind
 							: `${searchResult.length} results`}
 				</div>
 				<div>
 					{calcResult
-						? 'Enter 复制结果 · 应用点击打开'
+						? calcResult.rows.length > 0
+							? 'Enter 复制主结果 · 点击其他行复制该项'
+							: 'Enter 复制结果 · 应用点击打开'
 						: '↑↓←→ to navigate • Enter to open'}
 				</div>
 			</div>
