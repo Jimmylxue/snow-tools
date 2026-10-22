@@ -4,31 +4,29 @@ import {
 	UseMutationOptions,
 	useQuery,
 } from '@tanstack/react-query'
-import { ClientError, post } from '..'
+import { translateText } from '@/hooks/ipc/translate'
 import { TBaiduFanyi, TRequestParams } from './type'
 
 export const useTranslate = (
 	config?: Omit<
-		UndefinedInitialDataOptions<TBaiduFanyi, ClientError>,
+		UndefinedInitialDataOptions<TBaiduFanyi, Error>,
 		'queryFn'
 	> & { params: TRequestParams }
 ) => {
-	return useQuery<TBaiduFanyi, ClientError>({
+	return useQuery<TBaiduFanyi, Error>({
 		...config,
 		queryFn: async () => {
-			return await post('translate/base', { ...config?.params })
+			return await translateText(config!.params)
 		},
 		queryKey: config!.queryKey,
 	})
 }
 
 export const useTranslateV2 = (
-	config?: UseMutationOptions<TBaiduFanyi, ClientError, TRequestParams>
+	config?: UseMutationOptions<TBaiduFanyi, Error, TRequestParams>
 ) => {
-	return useMutation<TBaiduFanyi, ClientError, TRequestParams>({
-		mutationFn: async data => {
-			return await post('translate/base', data)
-		},
+	return useMutation<TBaiduFanyi, Error, TRequestParams>({
+		mutationFn: translateText,
 		...config,
 	})
 }

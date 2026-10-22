@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, screen } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TWindows } from '../type'
@@ -16,6 +16,8 @@ class SettingWindow implements TWindows {
 
 	routerName: T_SCREEN_SIZE_TYPE = 'SETTING'
 
+	private hasShown = false
+
 	constructor() {}
 
 	create(onLoad?: () => void) {
@@ -27,13 +29,15 @@ class SettingWindow implements TWindows {
 				preload: path.join(__dirname, 'preload.mjs'),
 				contextIsolation: true,
 			},
-			resizable: false,
+			resizable: true,
 			frame: false,
-			alwaysOnTop: true,
+			alwaysOnTop: false,
 			show: false,
 			fullscreenable: true,
 			width: SYSTEM_SETTING_SCREEN_SIZE.width,
 			height: SYSTEM_SETTING_SCREEN_SIZE.height,
+			minWidth: 760,
+			minHeight: 540,
 			x,
 			y,
 		})
@@ -70,18 +74,32 @@ class SettingWindow implements TWindows {
 	}
 
 	show() {
-		const { x, y } = getCenterPositionBoundByRouter(this.routerName)
-		this.instance?.setBounds({
-			x,
-			y,
-		})
-		this.instance?.setVisibleOnAllWorkspaces(true, {
-			visibleOnFullScreen: true,
-			skipTransformProcessType: true,
-		})
-		this.instance?.setOpacity(1)
-		this.instance?.show()
-		this.instance?.focus()
+		const instance = this.instance
+		if (!instance) return
+
+		if (!this.hasShown) {
+			const { x, y } = getCenterPositionBoundByRouter(this.routerName)
+			instance.setBounds({ x, y })
+			this.hasShown = true
+		} else {
+			/** 用户拖动过窗口后保持位置；只有完全移出屏幕时才重新居中 */
+			const bounds = instance.getBounds()
+			const { workArea } = screen.getDisplayMatching(bounds)
+			const visible =
+				bounds.x < workArea.x + workArea.width - 80 &&
+				bounds.x + bounds.width > workArea.x + 80 &&
+				bounds.y < workArea.y + workArea.height - 80 &&
+				bounds.y + bounds.height > workArea.y + 80
+
+			if (!visible) {
+				const { x, y } = getCenterPositionBoundByRouter(this.routerName)
+				instance.setBounds({ x, y })
+			}
+		}
+
+		instance.setOpacity(1)
+		instance.show()
+		instance.focus()
 	}
 
 	close() {

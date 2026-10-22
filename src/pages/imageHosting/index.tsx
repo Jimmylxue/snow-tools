@@ -1,6 +1,8 @@
-import { useUploadStaticImage } from '@/api/imageHost'
-import { useState, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { copyToClipboard } from '@/lib/utils'
+import { getUpyunConfig, uploadImageToUpyun } from '@/hooks/ipc/upyun'
+import { sendRouterNavigate } from '@/hooks/ipc/window'
 
 type UploadStatus = 'idle' | 'selected' | 'uploading' | 'success'
 
@@ -21,9 +23,24 @@ export function ImageHosting() {
 	const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
 	const [selectedFile, setSelectedFile] = useState<File | null>(null)
 	const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+	const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
+	const [configured, setConfigured] = useState<boolean | null>(null)
+	const [isHovering, setIsHovering] = useState(false)
 	const fileInputRef = useRef<HTMLInputElement>(null)
+	const uploadIdRef = useRef(0)
+	const pasteShortcut = navigator.platform.includes('Mac') ? '⌘V' : 'Ctrl+V'
 
-	const { data, mutateAsync } = useUploadStaticImage()
+	useEffect(() => {
+		const loadConfig = () => {
+			getUpyunConfig()
+				.then(state => setConfigured(state.configured))
+				.catch(() => setConfigured(false))
+		}
+
+		loadConfig()
+		window.addEventListener('focus', loadConfig)
+		return () => window.removeEventListener('focus', loadConfig)
+	}, [])
 
 	const handleDragOver = (e: React.DragEvent) => {
 		e.preventDefault()
@@ -52,8 +69,12 @@ export function ImageHosting() {
 		}
 	}
 
-	const handleFileSelect = (file: File) => {
-		if (!file.type.startsWith('image/')) {
+	const handleFileSelect = useCallback((file: File) => {
+		const isImage =
+			file.type.startsWith('image/') ||
+			/\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(file.name)
+
+		if (!isImage) {
 			sToast('请上传图片文件')
 			return
 		}
@@ -65,6 +86,8 @@ export function ImageHosting() {
 
 		setSelectedFile(file)
 		setUploadStatus('selected')
+		setUploadedUrl(null)
+		uploadIdRef.current += 1
 
 		// 预览图片
 		const reader = new FileReader()
@@ -72,40 +95,84 @@ export function ImageHosting() {
 			setUploadedImage(e.target?.result as string)
 		}
 		reader.readAsDataURL(file)
-	}
+	}, [])
+
+	/** 鼠标在左侧上传区时，支持直接粘贴剪贴板里的图片 */
+	useEffect(() => {
+		if (!isHovering) return
+
+		const handlePaste = (event: ClipboardEvent) => {
+			const items = event.clipboardData?.items
+			if (!items) return
+
+			const imageFile = Array.from(items)
+				.filter(item => item.kind === 'file')
+				.map(item => item.getAsFile())
+				.filter((file): file is File => !!file)
+				.find(
+					file =>
+						file.type.startsWith('image/') ||
+						/\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(
+							file.name,
+						),
+				)
+
+			if (!imageFile) return
+
+			event.preventDefault()
+			handleFileSelect(imageFile)
+		}
+
+		window.addEventListener('paste', handlePaste)
+		return () => window.removeEventListener('paste', handlePaste)
+	}, [handleFileSelect, isHovering])
 
 	const handleUpload = async () => {
 		if (!selectedFile) return
 
+		const uploadId = ++uploadIdRef.current
 		setUploadStatus('uploading')
 
-		// 模拟上传过程
 		try {
-			const formData = new FormData()
-			formData.append('file', selectedFile)
+			const data = await selectedFile.arrayBuffer()
+			const result = await uploadImageToUpyun({
+				fileName: selectedFile.name,
+				mimeType: selectedFile.type,
+				data,
+			})
 
-			console.log('selectedFile', formData)
-			// 这里应该是实际上传到图床的逻辑
-			await mutateAsync(formData)
+			if (uploadId !== uploadIdRef.current) return
 
+			if (!result.ok) {
+				setUploadStatus('selected')
+				sToast(result.message)
+				return
+			}
+
+			setUploadedUrl(result.url)
 			setUploadStatus('success')
 			sToast('图片上传成功')
 		} catch (error) {
+			if (uploadId !== uploadIdRef.current) return
 			setUploadStatus('selected')
-			sToast('上传失败，请重试')
+			sToast(
+				error instanceof Error ? error.message : '上传失败，请重试',
+			)
 		}
 	}
 
 	const handleCopyLink = () => {
-		if (uploadStatus === 'success') {
-			navigator.clipboard.writeText(data!)
+		if (uploadStatus === 'success' && uploadedUrl) {
+			copyToClipboard(uploadedUrl)
 			sToast('链接已复制到剪贴板')
 		}
 	}
 
 	const handleReset = () => {
+		uploadIdRef.current += 1
 		setSelectedFile(null)
 		setUploadedImage(null)
+		setUploadedUrl(null)
 		setUploadStatus('idle')
 		if (fileInputRef.current) {
 			fileInputRef.current.value = ''
@@ -152,8 +219,11 @@ export function ImageHosting() {
 	return (
 		<div className="w-full h-screen bg-[#f5f6fa] rounded-[10px] shadow-[0_2px_12px_0_rgba(0,0,0,0.08)] flex flex-col overflow-hidden border border-[#e0e3eb]">
 			{/* Header */}
-			<div className="flex items-center px-4 py-3 border-b border-[#e0e3eb] bg-white">
+			<div className="app-drag flex select-none items-center px-4 py-3 border-b border-[#e0e3eb] bg-white">
 				<h2 className="text-lg font-medium text-[#2f3640]">图片上传</h2>
+				<span className="ml-2 rounded bg-[#f0f4f8] px-1.5 py-0.5 text-[10px] text-[#7f8fa4]">
+					又拍云直传
+				</span>
 				<div className="ml-auto text-xs flex items-center">
 					<span className={`flex items-center ${statusConfig.color}`}>
 						{statusConfig.icon === 'info' && (
@@ -212,10 +282,29 @@ export function ImageHosting() {
 				</div>
 			</div>
 
+			{configured === false && (
+				<div className="flex items-center justify-between gap-3 border-b border-[#f0d9a6] bg-[#fff8e6] px-4 py-2 text-xs text-[#9a6b00]">
+					<span className="min-w-0 truncate">
+						还没有配置又拍云，请先在设置里填写服务名、操作员和密码。
+					</span>
+					<button
+						type="button"
+						className="shrink-0 font-medium underline underline-offset-2"
+						onClick={() => sendRouterNavigate('setting')}
+					>
+						去设置
+					</button>
+				</div>
+			)}
+
 			{/* Main Content */}
-			<div className="flex-1 flex bg-white">
+			<div className="flex min-h-0 flex-1 bg-white">
 				{/* Upload Area */}
-				<div className="flex-1 p-4 border-r border-[#e0e3eb]">
+				<div
+					className="min-w-0 flex-1 p-4 border-r border-[#e0e3eb]"
+					onMouseEnter={() => setIsHovering(true)}
+					onMouseLeave={() => setIsHovering(false)}
+				>
 					<div
 						className={`w-full h-full border-2 border-dashed rounded-[8px] transition-all duration-200 flex flex-col items-center justify-center ${
 							isDragging
@@ -227,9 +316,6 @@ export function ImageHosting() {
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={handleDrop}
-						onClick={() =>
-							uploadStatus === 'idle' && fileInputRef.current?.click()
-						}
 					>
 						{uploadStatus === 'idle' ? (
 							<>
@@ -253,13 +339,22 @@ export function ImageHosting() {
 									支持 JPG、PNG、GIF 等格式
 									<br />
 									文件大小不超过 10MB
+									<br />
+									点击窗口后按 {pasteShortcut} 可直接粘贴剪贴板图片
 								</p>
-								<button className="mt-4 px-6 py-2 bg-[#487eb0] text-white rounded-[6px] text-sm font-medium hover:bg-[#386a9a] transition-colors">
+								<button
+									type="button"
+									onClick={event => {
+										event.stopPropagation()
+										fileInputRef.current?.click()
+									}}
+									className="mt-4 px-6 py-2 bg-[#487eb0] text-white rounded-[6px] text-sm font-medium hover:bg-[#386a9a] transition-colors"
+								>
 									选择文件
 								</button>
 							</>
 						) : (
-							<div className="text-center">
+							<div className="w-full min-w-0 text-center">
 								<div className="w-20 h-20 mx-auto mb-3 rounded-[6px] overflow-hidden border border-[#e0e3eb]">
 									<img
 										src={uploadedImage || ''}
@@ -267,12 +362,16 @@ export function ImageHosting() {
 										className="w-full h-full object-cover"
 									/>
 								</div>
-								<p className="text-[#2f3640] font-medium mb-2">
+								<p className="mb-2 w-full truncate px-4 text-center font-medium text-[#2f3640]">
 									{selectedFile?.name}
 								</p>
 								<p className="text-[#7f8fa4] text-sm mb-3">
 									{(selectedFile?.size || 0) / 1024 / 1024 > 1
-										? `${(selectedFile?.size || 0) / 1024 / 1024} MB`
+										? `${(
+												(selectedFile?.size || 0) /
+												1024 /
+												1024
+											).toFixed(2)} MB`
 										: `${Math.round((selectedFile?.size || 0) / 1024)} KB`}
 								</p>
 								<div className="flex justify-center">
@@ -319,31 +418,31 @@ export function ImageHosting() {
 				</div>
 
 				{/* Preview Area */}
-				<div className="flex-1 p-4">
-					<div className="w-full h-full border border-[#e0e3eb] rounded-[8px] bg-[#fafbfc] flex flex-col">
+				<div className="min-w-0 flex-1 p-4">
+					<div className="flex h-full w-full flex-col rounded-[8px] border border-[#e0e3eb] bg-[#fafbfc]">
 						<div className="px-3 py-2 border-b border-[#e0e3eb] bg-white rounded-t-[8px]">
 							<h3 className="text-sm font-medium text-[#2f3640]">图片信息</h3>
 						</div>
 
-						<div className="flex-1 p-3">
+						<div className="min-h-0 flex-1 overflow-y-auto p-3">
 							{uploadStatus !== 'idle' ? (
 								<div className="space-y-3">
-									<div className="flex justify-between text-sm">
-										<span className="text-[#7f8fa4]">文件名:</span>
-										<span className="text-[#2f3640] truncate max-w-[120px]">
+									<div className="flex items-start justify-between gap-3 text-sm">
+										<span className="shrink-0 text-[#7f8fa4]">文件名:</span>
+										<span className="min-w-0 flex-1 break-all text-right text-[#2f3640]">
 											{selectedFile?.name}
 										</span>
 									</div>
-									<div className="flex justify-between text-sm">
-										<span className="text-[#7f8fa4]">格式:</span>
-										<span className="text-[#2f3640]">
+									<div className="flex items-start justify-between gap-3 text-sm">
+										<span className="shrink-0 text-[#7f8fa4]">格式:</span>
+										<span className="min-w-0 flex-1 truncate text-right text-[#2f3640]">
 											{selectedFile?.type.split('/')[1]?.toUpperCase() ||
 												'未知'}
 										</span>
 									</div>
-									<div className="flex justify-between text-sm">
-										<span className="text-[#7f8fa4]">大小:</span>
-										<span className="text-[#2f3640]">
+									<div className="flex items-start justify-between gap-3 text-sm">
+										<span className="shrink-0 text-[#7f8fa4]">大小:</span>
+										<span className="min-w-0 flex-1 truncate text-right text-[#2f3640]">
 											{selectedFile?.size
 												? selectedFile.size / 1024 / 1024 > 1
 													? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
@@ -351,30 +450,44 @@ export function ImageHosting() {
 												: '0 KB'}
 										</span>
 									</div>
-									<div className="flex justify-between text-sm">
-										<span className="text-[#7f8fa4]">状态:</span>
-										<span className={`font-medium ${statusConfig.color}`}>
+									<div className="flex items-start justify-between gap-3 text-sm">
+										<span className="shrink-0 text-[#7f8fa4]">状态:</span>
+										<span
+											className={`min-w-0 flex-1 truncate text-right font-medium ${statusConfig.color}`}
+										>
 											{statusConfig.text}
 										</span>
 									</div>
 
-									{uploadStatus === 'success' && (
-										<div className="pt-2">
-											<button
-												onClick={handleCopyLink}
-												className="w-full py-2 bg-[#487eb0] text-white rounded-[6px] text-sm font-medium hover:bg-[#386a9a] transition-colors"
+									{uploadStatus === 'success' && uploadedUrl && (
+										<div className="flex items-start justify-between gap-3 text-sm">
+											<span className="shrink-0 text-[#7f8fa4]">链接:</span>
+											<span
+												className="min-w-0 flex-1 truncate text-right text-[#2f3640]"
+												title={uploadedUrl}
 											>
-												复制图片链接
-											</button>
+												{uploadedUrl}
+											</span>
 										</div>
 									)}
 								</div>
 							) : (
-								<div className="h-full flex items-center justify-center text-[#a4b0be] text-sm">
+								<div className="flex h-full items-center justify-center text-sm text-[#a4b0be]">
 									选择图片后显示详细信息
 								</div>
 							)}
 						</div>
+
+						{uploadStatus === 'success' && (
+							<div className="shrink-0 border-t border-[#e0e3eb] p-3">
+								<button
+									onClick={handleCopyLink}
+									className="w-full rounded-[6px] bg-[#487eb0] py-2 text-sm font-medium text-white transition-colors hover:bg-[#386a9a]"
+								>
+									复制图片链接
+								</button>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
@@ -394,13 +507,15 @@ export function ImageHosting() {
 							clipRule="evenodd"
 						/>
 					</svg>
-					{uploadStatus === 'idle'
-						? '支持拖拽上传，点击选择文件'
-						: uploadStatus === 'selected'
-						? '点击"上传图片"按钮将图片上传到图床'
-						: uploadStatus === 'uploading'
-						? '图片上传中，请稍候...'
-						: '上传成功，可复制图片链接使用'}
+					{configured === false
+						? '请先在设置 → 图床中配置又拍云'
+						: uploadStatus === 'idle'
+							? '支持拖拽上传，点击选择文件'
+							: uploadStatus === 'selected'
+								? '点击"上传图片"按钮将图片上传到图床'
+								: uploadStatus === 'uploading'
+									? '图片上传中，请稍候...'
+									: '上传成功，可复制图片链接使用'}
 				</span>
 			</div>
 		</div>

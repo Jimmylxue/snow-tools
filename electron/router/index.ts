@@ -24,6 +24,8 @@ import { initHosts } from '../biz/hosts'
 import { initAutoLaunch } from '../biz/autoLaunch'
 import { initJsonTool } from '../biz/jsonTool'
 import { initSpotlight } from '../biz/spotlight'
+import { initTranslate } from '../biz/translate'
+import { initUpyun } from '../biz/upyun'
 
 export function initRouter(startHidden = false) {
 	initApps()
@@ -31,6 +33,8 @@ export function initRouter(startHidden = false) {
 	initAutoLaunch()
 	initJsonTool()
 	initSpotlight()
+	initTranslate()
+	initUpyun()
 
 	mainWindow.create()
 	capturerWindow.create()

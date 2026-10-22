@@ -24,7 +24,7 @@ export const Child = observer(() => {
 			}, 100)
 		},
 		onSuccess: res => {
-			setOutputText(res.trans_result[0].dst)
+			setOutputText(res.trans_result[0]?.dst ?? '')
 		},
 	})
 
@@ -38,17 +38,26 @@ export const Child = observer(() => {
 			// Trigger translation
 			if (!inputText) {
 				setOutputText('')
-			} else if (inputText === data?.trans_result[0].src) {
+			} else if (inputText === data?.trans_result[0]?.src) {
 				copyToClipboard(outputText)
 				toast('The copy has been copied', {
 					duration: 700,
 				})
 			} else {
-				await mutateAsync({
-					from,
-					to,
-					q: inputText,
-				})
+				try {
+					await mutateAsync({
+						from,
+						to,
+						q: inputText,
+					})
+				} catch (error) {
+					reset()
+					toast.error(
+						error instanceof Error
+							? error.message
+							: '翻译失败，请稍后重试',
+					)
+				}
 			}
 		}
 	}
@@ -171,7 +180,7 @@ export const Child = observer(() => {
 				</div>
 				<div className="flex-1 p-4 relative">
 					<div
-						className={`w-full h-full ${
+						className={`w-full h-full whitespace-pre-wrap ${
 							outputText ? 'text-[#2f3640]' : 'text-[#a4b0be]'
 						} overflow-auto`}
 					>

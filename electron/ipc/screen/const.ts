@@ -37,8 +37,8 @@ const FANYI_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
 }
 
 export const SYSTEM_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
-	width: 640,
-	height: 480,
+	width: 820,
+	height: 600,
 	topProportion: 1.3,
 }
 
@@ -49,8 +49,8 @@ export const CLIPBOARD_HISTORY_PAGE_SIZE: T_SCREEN_VALUE = {
 }
 
 export const IMAGE_HOSTING_SETTING_SCREEN_SIZE: T_SCREEN_VALUE = {
-	width: 700,
-	height: 350,
+	width: 860,
+	height: 560,
 	topProportion: 1.3,
 }
 

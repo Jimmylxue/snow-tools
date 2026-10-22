@@ -43,17 +43,15 @@ export const languageMap = {
 export type TShortEn = keyof typeof LanguageShort
 
 export type TBaiduFanyi = {
-	from: TShortEn
-	to: TShortEn
-	trans_result: [
-		{
-			src: 'string'
-			dst: 'string'
-		}
-	]
-	// 失败
-	message: string
-	result: {
+	from: string
+	to: string
+	trans_result: Array<{
+		src: string
+		dst: string
+	}>
+	/** 后端服务失败时的附加信息 */
+	message?: string
+	result?: {
 		error_code: string
 		error_msg: string
 	}
